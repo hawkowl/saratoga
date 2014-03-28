@@ -1,0 +1,10 @@
+*.pyc
+_trial*
+dist/
+*.egg-info/
+build/
+.sass-cache
+.coverage
+htmlcov/
+.tox/
+_build
