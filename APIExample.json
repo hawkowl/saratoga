@@ -1,0 +1,51 @@
+{
+
+    "metadata": {
+        "name": "APIExample",
+        "friendlyName": "HawkOwl's API Example",
+        "versions": [1, 2],
+        "apiInfo": true,
+        "cors": "*"
+    },
+
+    "api": [
+        {
+            "name": "weather",
+            "friendlyName": "Weather",
+            "description": "Accessing weather.",
+            "endpoint": "weather",
+            "getProcessors": [
+                {   
+                    "versions": [1],
+                    "paramsType": "url",
+                    "optionalParams": ["countryCode"],
+                    "requiredParams": [
+                        {
+                            "param": "postcode"
+                        },
+                        "unixTimestamp"
+                    ]
+                },
+                {
+                    "versions": [2],
+                    "paramsType": "url",
+                    "requiredParams": ["postcode", "countryCode", "unixTimestamp"],
+                    "returnParams": ["temperature",
+                        {
+                            "param": "isRaining",
+                            "paramOptions": ["YES", "NO"]
+                        }
+                    ],
+                    "optionalReturnParams": [
+                        {
+                            "param": "windSpeed",
+                            "description": "Wind speed, in km/h.",
+                            "type": "numeric"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+
+}
