@@ -1,10 +1,17 @@
 from twisted.web.resource import Resource
 from twisted.internet.defer import maybeDeferred
+from twisted.python.failure import Failure
 
-from saratoga import BadRequestParams, BadResponseParams, AuthenticationRequired
+from saratoga.tools import _verifyReturnParams, _getParams
+from saratoga import (
+    BadRequestParams,
+    BadResponseParams,
+    AuthenticationRequired,
+    DoesNotExist
+)
 
 
-import json
+import json, saratoga, twisted, traceback, sys
 
 class DefaultServiceClass(object):
     """
@@ -33,124 +40,75 @@ class SaratogaResource(Resource):
 
             request.write(finishedResult)
             request.finish()
+            
 
+        def _error(failure, request, api, processor):
+            
+            error = failure.value
+            errorcode = 500
 
+            if not isinstance(error, BadRequestParams):
+                traceback.print_exc(file=sys.stderr)
+            if hasattr(error, "code"):
+                errorcode = error.code
+
+            request.setResponseCode(errorcode)
+
+            if errorcode == 500:
+                errstatus = "error"
+                errmessage = "Internal server error."
+            else:
+                errstatus = "fail"
+                errmessage = error.message
+
+            response = {
+                "status": errstatus,
+                "data": errmessage
+            }
+
+            request.write(json.dumps(response))
+            request.finish()
+
+        request.setHeader("Content-Type", "application/json; charset=utf-8")
+        request.setHeader("Server", "Saratoga {} on Twisted {}".format(
+                saratoga.__version__, twisted.__version__))
 
         api, version, processor = self.api.endpoints[request.method].get(
-            request.path)
+            request.path, (None, None, None))
 
         if processor:
 
-            request.setHeader("Content-Type", "application/json; charset=utf-8")
-
-
             versionClass = getattr(self.api.implementation, "v{}".format(version))
-
             func = getattr(versionClass, "{}_{}".format(api["endpoint"], request.method)).im_func
 
-            params = {}
+            # Getting parameters
+
+            paramsType = processor.get("paramsType", "jsonbody")
+
+            try:
+                if paramsType == "url":
+                    args = request.args
+                    params = {}
+                    for key, data in args.iteritems():
+                        params[key] = data[0]
+                    params = _getParams(params, processor)
+                elif paramsType == "jsonbody":
+                    requestContent = request.content.read()
+                    params = json.loads(requestContent)
+                    params = _getParams(params, processor)
+            except Exception, e:
+                _error(Failure(e), request, api, processor)
+                return 1
 
             d = maybeDeferred(func, self.api.serviceClass, request, params)
             d.addCallback(_write, request, api, processor)
+            d.addErrback(_error, request, api, processor)
 
-            return 1
-
-def _verifyReturnParams(result, APIInfo):
-
-    returnFormat = APIInfo.get("returnFormat", "dict")
-
-    if returnFormat == "dict":
-        if not isinstance(result, dict):
-            raise BadResponseParams("Result did not match the return format.")
-
-        _checkReturnParamsDict(result, APIInfo)
-
-    elif returnFormat == "list":
-        if isinstance(result, basestring):
-            items = json.loads(result)
         else:
-            items = result
+            fail = DoesNotExist("Endpoint does not exist.")
+            _error(Failure(fail), request, None, None)
 
-        if not isinstance(items, list):
-            raise BadResponseParams("Result did not match the return format.")
-
-        for item in items:
-            _checkReturnParamsDict(item, APIInfo)
-
-    return result
-
-def _normaliseParams(params):
-
-    finishedParams = []
-    paramKeys = []
-
-    for param in params:
-        if isinstance(param, dict):
-            options = []
-            if param.get("paramOptions", None):
-                for option in param.get("paramOptions", None):
-                    if isinstance(option, dict):
-                        options.append(option["data"])
-                    elif isinstance(option, basestring):
-                        options.append(option)
-
-            paramKeys.append(param["param"])
-            finishedParams.append({
-                "param": param["param"],
-                "paramOptions": options
-            })
-        elif isinstance(param, basestring):
-            paramKeys.append(param)
-            finishedParams.append({
-                "param": param,
-            })
-
-    return (finishedParams, set(paramKeys))
-
-def _checkParamOptions(item, data, exp):
-
-    paramOptions = item.get("paramOptions", None)
-
-    if paramOptions and not data in paramOptions:
-        raise exp(
-            "'%s' isn't part of %s in %s" % (data, json.dumps(paramOptions),
-            item["param"]))
-
-def _checkReturnParamsDict(result, processor):
-
-    if result:
-        keys = set(result.keys())
-    else:
-        keys = set()
-
-    requiredInput = processor.get("requiredReturnParams", set())
-    optionalInput = processor.get("optionalReturnParams", set())
-
-    if not requiredInput or optionalInput:
-        return True
-
-    required, requiredKeys = _normaliseParams(requiredInput)
-    optional, optionalKeys = _normaliseParams(optionalInput)
-    accountedFor = set()
-
-    for key, data in result.iteritems():
-        for req in required + optional:
-            if req["param"] == key:
-                _checkParamOptions(req, data, BadResponseParams)
-                accountedFor.add(req["param"])
-
-    missing = requiredKeys - accountedFor
-    extra = keys - (requiredKeys | optionalKeys)
-
-    if missing:
-        raise BadResponseParams("Missing response parameters: '%s'" % (
-            "', '".join(sorted(missing))))
-    if extra:
-        raise BadResponseParams("Unexpected response parameters: '%s'" % (
-            "', '".join(sorted(extra))))
-
-    return True
-
+        return 1
 
 
 

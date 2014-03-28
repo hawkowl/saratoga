@@ -30,5 +30,5 @@ class APIExample(object):
 
 root = SaratogaAPI(APIExample, json.load(open("APIExample.json")), myServiceClass())
 factory = Site(root.getResource())
-reactor.listenTCP(8880, factory)
+reactor.listenTCP(8888, factory)
 reactor.run()
