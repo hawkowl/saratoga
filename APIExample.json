@@ -3,7 +3,7 @@
     "metadata": {
         "name": "APIExample",
         "friendlyName": "HawkOwl's API Example",
-        "versions": [1, 2],
+        "versions": [1],
         "apiInfo": true,
         "cors": "*"
     },
@@ -24,24 +24,6 @@
                             "param": "postcode"
                         },
                         "unixTimestamp"
-                    ]
-                },
-                {
-                    "versions": [2],
-                    "paramsType": "url",
-                    "requiredParams": ["postcode", "countryCode", "unixTimestamp"],
-                    "returnParams": ["temperature",
-                        {
-                            "param": "isRaining",
-                            "paramOptions": ["YES", "NO"]
-                        }
-                    ],
-                    "optionalReturnParams": [
-                        {
-                            "param": "windSpeed",
-                            "description": "Wind speed, in km/h.",
-                            "type": "numeric"
-                        }
                     ]
                 }
             ]

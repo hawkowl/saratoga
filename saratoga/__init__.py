@@ -1,6 +1,7 @@
 import os
 
 __version__ = "0.1.0"
+__gitversion__ = __version__
 
 basePath = os.path.abspath(os.path.dirname(__file__))
 
@@ -8,7 +9,7 @@ try:
     from subprocess import check_output
     cmd = "--git-dir={}/../.git".format(basePath)
     res = check_output(["git", cmd, "rev-parse", "--short", "HEAD"])[:-1]
-    __version__ = "{} ({})".format(__version__, res)
+    __gitversion__ = "{} ({})".format(__version__, res)
 except Exception, e:
     pass
 

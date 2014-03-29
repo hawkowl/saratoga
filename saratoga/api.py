@@ -10,30 +10,32 @@ from saratoga import (
     DoesNotExist
 )
 
-
 import json, saratoga, twisted, traceback, sys
+
+
 
 class DefaultServiceClass(object):
     """
     Placeholder.
     """
 
+
+
 class SaratogaResource(Resource):
     isLeaf = True
 
     def __init__(self, api):
-
         self.api = api
 
     def render(self, request):
 
         def _write(result, request, api, processor):
 
-            result = _verifyReturnParams(result, processor)
+            res = _verifyReturnParams(result, processor)
 
             response = {
                 "status": "success",
-                "data": result
+                "data": res
             }
 
             finishedResult = json.dumps(response)
@@ -48,7 +50,7 @@ class SaratogaResource(Resource):
             errorcode = 500
 
             if not isinstance(error, BadRequestParams):
-                traceback.print_exc(file=sys.stderr)
+                print error
             if hasattr(error, "code"):
                 errorcode = error.code
 
@@ -76,15 +78,21 @@ class SaratogaResource(Resource):
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
                 saratoga.__version__, twisted.__version__))
 
+        print "Looking for {}".format(request.path)
+
         api, version, processor = self.api.endpoints[request.method].get(
             request.path, (None, None, None))
 
         if processor:
 
-            versionClass = getattr(self.api.implementation, "v{}".format(version))
-            func = getattr(versionClass, "{}_{}".format(api["endpoint"], request.method)).im_func
+            versionClass = getattr(
+                self.api.implementation, "v{}".format(version))
+            func = getattr(versionClass, "{}_{}".format(
+                api["endpoint"], request.method)).im_func
 
-            # Getting parameters
+            ########################
+            # Get some parameters. #
+            ########################
 
             paramsType = processor.get("paramsType", "jsonbody")
 
@@ -97,7 +105,10 @@ class SaratogaResource(Resource):
                     params = _getParams(params, processor)
                 elif paramsType == "jsonbody":
                     requestContent = request.content.read()
-                    params = json.loads(requestContent)
+                    if requestContent:
+                        params = json.loads(requestContent)
+                    else:
+                        params = {}
                     params = _getParams(params, processor)
             except Exception, e:
                 _error(Failure(e), request, api, processor)
@@ -131,44 +142,48 @@ class SaratogaAPI(object):
             raise Exception("Definition requires a metadata section.")
 
         self.APIMetadata = definition["metadata"]
-        self.APIDefinition = definition.get("api", [])
-
-        self.resource = SaratogaResource(self)
-
+        self.APIDefinition = definition.get("endpoints", [])
         self._versions = self.APIMetadata["versions"]
-
         self.endpoints = {
             "GET": {},
             "POST": {}
         }
 
+        self.resource = SaratogaResource(self)
+
         for version in self._versions:
             try:
-                i = getattr(self._implementation, "v{}".format(version))(self.serviceClass)
+                i = getattr(self._implementation, "v{}".format(version))(
+                    self.serviceClass)
             except TypeError:
                 i = getattr(self._implementation, "v{}".format(version))()
 
             setattr(self.implementation, "v{}".format(version), i)
 
         for api in self.APIDefinition:
-
             for verb in ["GET", "POST"]:
-                for processor in api.get("{}Processors".format(verb.lower()), []):
-
+                for processor in api.get(
+                    "{}Processors".format(verb.lower()), []):
                     for version in processor["versions"]:
-
                         if version not in self._versions:
-                            raise Exception("Version mismatch - {} in {} is not a declared version".format(version, api["endpoint"]))
+                            raise Exception("Version mismatch - {} in {} is "
+                                "not a declared version".format(
+                                version, api["endpoint"]))
 
                         path = "/v{}/{}".format(version, api["endpoint"])
-
                         self.endpoints[verb][path] = (api, version, processor)
-
-
-
-
 
 
     def getResource(self):
 
         return self.resource
+
+    def run(self, port=8080):
+
+        from twisted.web.server import Site
+        from twisted.web.resource import Resource
+        from twisted.internet import reactor
+
+        factory = Site(self.resource)
+        reactor.listenTCP(port, factory)
+        reactor.run()
