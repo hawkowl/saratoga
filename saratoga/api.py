@@ -162,7 +162,7 @@ class SaratogaAPI(object):
                     self.serviceClass)
             except TypeError:
                 i = getattr(self._implementation, "v{}".format(version))()
-            except Exception, e:
+            except Exception:
                 raise Exception(
                     "Implementation is missing version {}".format(version))
 

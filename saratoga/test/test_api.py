@@ -20,6 +20,7 @@ class APIImpl(object):
             self.responseParams_GET = self.example_GET
             self.dictResponse_GET = self.listResponse_GET
             self.listofdictResponse_GET = self.listResponse_GET
+            self.paramOptions_GET = self.example_GET
 
 
 APIDef = {
@@ -64,6 +65,11 @@ APIDef = {
         {
             "endpoint": "dictResponse",
             "getProcessors": [{"versions": [1], "responseFormat": "dict"}]
+        },
+        {
+            "endpoint": "paramOptions",
+            "getProcessors": [{"versions": [1], "requiredParams": [
+            {"param": "foo", "paramOptions": ["bar", {"data": "baz"}]}]}]
         }
     ]
 }
@@ -84,7 +90,7 @@ class SaratogaErrorCatchingTests(TestCase):
         }
 
         try:
-            api = SaratogaAPI(APIImpl, APIDef)
+            SaratogaAPI(APIImpl, APIDef)
         except Exception, e:
             self.assertEqual(e.message,
                 "Version mismatch - 2 in example is not a declared version")
@@ -102,7 +108,7 @@ class SaratogaErrorCatchingTests(TestCase):
         }
 
         try:
-            api = SaratogaAPI(APIImpl, APIDef)
+            SaratogaAPI(APIImpl, APIDef)
         except Exception, e:
             self.assertEqual(e.message,
                 "Implementation is missing version 2")
@@ -112,7 +118,7 @@ class SaratogaErrorCatchingTests(TestCase):
         APIDef = {"endpoints": []}
 
         try:
-            api = SaratogaAPI(APIImpl, APIDef)
+            SaratogaAPI(APIImpl, APIDef)
         except Exception, e:
             self.assertEqual(e.message,
                 "Definition requires a metadata section.")
@@ -138,7 +144,7 @@ class SaratogaErrorCatchingTests(TestCase):
         }
 
         try:
-            api = SaratogaAPI(APIImpl, APIDef)
+            SaratogaAPI(APIImpl, APIDef)
         except Exception, e:
             self.assertEqual(e.message,
                 "Implementation is missing the GET processor in the v2 example "
@@ -163,6 +169,36 @@ class SaratogaAPITests(TestCase):
             )
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
+
+
+    def test_paramOptions(self):
+        """
+        Test that param options work.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"foo": "bar"}}
+            )
+
+        return testItem(self.api, "/v1/paramOptions", params={
+            "foo": "bar"
+            }).addCallback(rendered)
+
+
+    def test_paramOptionsFailure(self):
+        """
+        Test that it handles paramOptions failing gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail",
+                "data": "'cake' isn't part of [\"bar\", \"baz\"] in foo"}
+            )
+
+        return testItem(self.api, "/v1/paramOptions",
+            params={"foo": "cake"}).addCallback(rendered)
 
 
     def test_dictResponse(self):
