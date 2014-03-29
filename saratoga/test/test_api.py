@@ -67,6 +67,41 @@ class SaratogaAPITests(TestCase):
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
 
+    def test_requiredResponseParamsAllowsOptionalParams(self):
+        """
+        Test that required response params work, and will return an error if
+        given extras.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success",
+                "data": {"cake": "yes", "muffin": "yes", "pizza": "slice"}}
+            )
+
+        d = testItem(self.api, "/v1/responseParams",
+            params={"cake": "yes", "muffin": "yes", "pizza": "slice"})
+        return d.addCallback(rendered)
+
+    def test_requiredResponseParamsReturnsErrorIfGivenExtra(self):
+        """
+        Test that required response params work, and will return an error if
+        given extras.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "Unexpected response parameters: 'foo'")
+
+        d = testItem(self.api, "/v1/responseParams",
+            params={"cake": "yes", "muffin": "yes", "foo": "bar"})
+        return d.addCallback(rendered)
+
     def test_requiredResponseParamsReturnsErrorIfNotGiven(self):
         """
         Test that required response params work, and will return an error if
@@ -75,9 +110,12 @@ class SaratogaAPITests(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "fail",
-                "data": "Missing request parameters: 'goodbye', 'hello'"}
+                {"status": "error",
+                "data": "Internal server error."}
             )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "Missing response parameters: 'cake', 'muffin'")
 
         d = testItem(self.api, "/v1/responseParams")
         return d.addCallback(rendered)

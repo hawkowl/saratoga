@@ -1,14 +1,17 @@
 from twisted.web.resource import Resource
 from twisted.internet.defer import maybeDeferred
 from twisted.python.failure import Failure
+from twisted.python import log
 
-from saratoga.tools import _verifyReturnParams, _getParams
+from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga import (
     BadRequestParams,
     BadResponseParams,
     AuthenticationRequired,
     DoesNotExist
 )
+
+
 
 import json, saratoga, twisted, traceback, sys
 
@@ -31,7 +34,7 @@ class SaratogaResource(Resource):
 
         def _write(result, request, api, processor):
 
-            res = _verifyReturnParams(result, processor)
+            res = _verifyResponseParams(result, processor)
 
             response = {
                 "status": "success",
@@ -50,7 +53,7 @@ class SaratogaResource(Resource):
             errorcode = 500
 
             if not isinstance(error, BadRequestParams):
-                print error
+                log.err(failure)
             if hasattr(error, "code"):
                 errorcode = error.code
 

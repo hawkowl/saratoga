@@ -1,15 +1,15 @@
 from saratoga import BadRequestParams, BadResponseParams, AuthenticationRequired
 
 
-def _verifyReturnParams(result, APIInfo):
+def _verifyResponseParams(result, APIInfo):
 
-    returnFormat = APIInfo.get("returnFormat", "dict")
+    returnFormat = APIInfo.get("responseFormat", "dict")
 
     if returnFormat == "dict":
         if not isinstance(result, dict):
-            raise BadResponseParams("Result did not match the return format.")
+            raise BadResponseParams("Result did not match the response format.")
 
-        _checkReturnParamsDict(result, APIInfo)
+        _checkResponseParamsDict(result, APIInfo)
 
     elif returnFormat == "list":
         if isinstance(result, basestring):
@@ -18,10 +18,10 @@ def _verifyReturnParams(result, APIInfo):
             items = result
 
         if not isinstance(items, list):
-            raise BadResponseParams("Result did not match the return format.")
+            raise BadResponseParams("Result did not match the response format.")
 
         for item in items:
-            _checkReturnParamsDict(item, APIInfo)
+            _checkResponseParamsDict(item, APIInfo)
 
     return result
 
@@ -62,15 +62,15 @@ def _checkParamOptions(item, data, exp):
             "'%s' isn't part of %s in %s" % (data, json.dumps(paramOptions),
             item["param"]))
 
-def _checkReturnParamsDict(result, processor):
+def _checkResponseParamsDict(result, processor):
 
     if result:
         keys = set(result.keys())
     else:
         keys = set()
 
-    requiredInput = processor.get("requiredReturnParams", set())
-    optionalInput = processor.get("optionalReturnParams", set())
+    requiredInput = processor.get("requiredResponseParams", set())
+    optionalInput = processor.get("optionalResponseParams", set())
 
     if not requiredInput and not optionalInput:
         return result
