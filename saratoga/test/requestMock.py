@@ -2,7 +2,6 @@ from mock import Mock
 
 from StringIO import StringIO
 
-from twisted.internet.defer import maybeDeferred
 from twisted.web import server
 from twisted.web.http_headers import Headers
 from twisted.web.test.test_web import DummyChannel

@@ -2,18 +2,20 @@ from twisted.web.resource import Resource
 from twisted.internet.defer import maybeDeferred
 from twisted.python.failure import Failure
 from twisted.python import log
+import twisted
 
 from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga import (
     BadRequestParams,
-    BadResponseParams,
-    AuthenticationRequired,
-    DoesNotExist
+    #BadResponseParams,
+    #AuthenticationRequired,
+    DoesNotExist,
+    __gitversion__
 )
 
 
 
-import json, saratoga, twisted, traceback, sys
+import json
 
 
 
@@ -79,7 +81,7 @@ class SaratogaResource(Resource):
 
         request.setHeader("Content-Type", "application/json; charset=utf-8")
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
-                saratoga.__version__, twisted.__version__))
+                __gitversion__, twisted.__version__))
 
         #print "Looking for {}".format(request.path)
 
@@ -184,7 +186,6 @@ class SaratogaAPI(object):
     def run(self, port=8080):
 
         from twisted.web.server import Site
-        from twisted.web.resource import Resource
         from twisted.internet import reactor
 
         factory = Site(self.resource)

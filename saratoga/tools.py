@@ -1,5 +1,6 @@
-from saratoga import BadRequestParams, BadResponseParams, AuthenticationRequired
+from saratoga import BadRequestParams, BadResponseParams
 
+import json
 
 def _verifyResponseParams(result, APIInfo):
 
@@ -12,15 +13,10 @@ def _verifyResponseParams(result, APIInfo):
         _checkResponseParamsDict(result, APIInfo)
 
     elif returnFormat == "list":
-        if isinstance(result, basestring):
-            items = json.loads(result)
-        else:
-            items = result
-
-        if not isinstance(items, list):
+        if not isinstance(result, list):
             raise BadResponseParams("Result did not match the response format.")
 
-        for item in items:
+        for item in result:
             _checkResponseParamsDict(item, APIInfo)
 
     return result
