@@ -78,7 +78,7 @@ class SaratogaResource(Resource):
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
                 saratoga.__version__, twisted.__version__))
 
-        print "Looking for {}".format(request.path)
+        #print "Looking for {}".format(request.path)
 
         api, version, processor = self.api.endpoints[request.method].get(
             request.path, (None, None, None))
@@ -101,7 +101,7 @@ class SaratogaResource(Resource):
                     args = request.args
                     params = {}
                     for key, data in args.iteritems():
-                        params[key] = data[0]
+                        params[key] = data
                     params = _getParams(params, processor)
                 elif paramsType == "jsonbody":
                     requestContent = request.content.read()

@@ -116,6 +116,9 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
 def testItem(resource, path, params=None, method="GET", useBody=False,
              headers=None):
 
+    def _cb(result, request):
+        return request
+
     if params:
         if useBody:
             myPath = requestMock(path, body=json.dumps(params), method=method, headers=headers)
@@ -125,4 +128,6 @@ def testItem(resource, path, params=None, method="GET", useBody=False,
     else:
         myPath = requestMock(path, method=method, headers=headers)
 
-    return _render(resource, myPath)
+    d = _render(resource.getResource(), myPath)
+    d.addCallback(_cb, myPath)
+    return d
