@@ -14,6 +14,7 @@ class APIImpl(object):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
             self.requestParams_GET = self.example_GET
+            self.responseParams_GET = self.example_GET
 
 APIDef = {
     "metadata": {"versions": [1]},
@@ -37,6 +38,14 @@ APIDef = {
                 "requiredParams": ["hello", "goodbye"],
                 "optionalParams": ["the"]
             }]
+        },
+        {
+            "endpoint": "responseParams",
+            "getProcessors": [{
+                "versions": [1],
+                "requiredResponseParams": ["cake", "muffin"],
+                "optionalResponseParams": ["pizza"]
+            }]
         }
     ]
 }
@@ -57,6 +66,21 @@ class SaratogaAPITests(TestCase):
             )
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
+
+    def test_requiredResponseParamsReturnsErrorIfNotGiven(self):
+        """
+        Test that required response params work, and will return an error if
+        not given.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail",
+                "data": "Missing request parameters: 'goodbye', 'hello'"}
+            )
+
+        d = testItem(self.api, "/v1/responseParams")
+        return d.addCallback(rendered)
 
     def test_requiredParamsReturnsErrorIfNotGiven(self):
         """
