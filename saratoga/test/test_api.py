@@ -13,6 +13,7 @@ class APIImpl(object):
         def __init__(self):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
+            self.requestParams_GET = self.example_GET
 
 APIDef = {
     "metadata": {"versions": [1]},
@@ -28,6 +29,14 @@ APIDef = {
         {
             "endpoint": "urlParams",
             "getProcessors": [{"versions": [1], "paramsType": "url"}]
+        },
+        {
+            "endpoint": "requestParams",
+            "getProcessors": [{
+                "versions": [1],
+                "requiredParams": ["hello", "goodbye"],
+                "optionalParams": ["the"]
+            }]
         }
     ]
 }
@@ -49,6 +58,19 @@ class SaratogaAPITests(TestCase):
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
 
+    def test_requiredParamsReturnsErrorIfNotGiven(self):
+        """
+        Test that required params work, and will return an error if not given.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"hello": "there"}}
+            )
+
+        d = testItem(self.api, "/v1/requestParams")
+        return d.addCallback(rendered)
+
 
     def test_jsonbodyParams(self):
         """
@@ -60,8 +82,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"hello": "there"}}
             )
 
-        d = testItem(self.api, "/v1/jsonbodyParams", params={"hello": "there"},
-            useBody=True)
+        d = testItem(self.api, "/v1/jsonbodyParams", params={"hello": "there"})
         return d.addCallback(rendered)
 
 
@@ -75,6 +96,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"hello": "there"}}
             )
 
-        d = testItem(self.api, "/v1/urlParams", params={"hello": "there"})
+        d = testItem(self.api, "/v1/urlParams", params={"hello": "there"},
+            useBody=False)
         return d.addCallback(rendered)
 
