@@ -72,7 +72,7 @@ def _checkReturnParamsDict(result, processor):
     requiredInput = processor.get("requiredReturnParams", set())
     optionalInput = processor.get("optionalReturnParams", set())
 
-    if not requiredInput or optionalInput:
+    if not requiredInput and not optionalInput:
         return result
 
     required, requiredKeys = _normaliseParams(requiredInput)
@@ -111,7 +111,7 @@ def _getParams(params, APIInfo):
     required, requiredKeys = _normaliseParams(requiredInput)
     optional, optionalKeys = _normaliseParams(optionalInput)
 
-    if not requiredInput or optionalInput:
+    if not requiredInput and not optionalInput:
         return params
 
     accountedFor = set()

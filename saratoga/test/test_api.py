@@ -65,10 +65,47 @@ class SaratogaAPITests(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"hello": "there"}}
+                {"status": "fail",
+                "data": "Missing request parameters: 'goodbye', 'hello'"}
             )
 
         d = testItem(self.api, "/v1/requestParams")
+        return d.addCallback(rendered)
+
+
+    def test_requiredParamsReturnsErrorIfGivenExtra(self):
+        """
+        Test that if required params are set, it will disallow unspecified
+        params.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail",
+                "data": "Unexpected request parameters: 'unspecified'"}
+            )
+
+        d = testItem(self.api, "/v1/requestParams", params={
+            "hello": "yes", "goodbye": "no", "unspecified": "yes"
+            })
+        return d.addCallback(rendered)
+
+
+    def test_requiredParamsAllowsOptionalParams(self):
+        """
+        Test that if required params are set, it will allow params set as
+        optional.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success",
+                "data": {"hello": "yes", "goodbye": "no", "the": "beatles"}}
+            )
+
+        d = testItem(self.api, "/v1/requestParams", params={
+            "hello": "yes", "goodbye": "no", "the": "beatles"
+            })
         return d.addCallback(rendered)
 
 
