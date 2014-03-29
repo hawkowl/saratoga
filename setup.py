@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 from setuptools import find_packages, setup
-
 from saratoga import __version__
 
 
 setup(
     name='saratoga',
-    description='Mini-Framework for making APIs.',
+    description='Framework for making APIs.',
     version=__version__,
     author='HawkOwl',
     author_email='hawkowl@atleastfornow.net',
@@ -33,7 +32,7 @@ setup(
         "Programming Language :: Python :: 2.7"
         ],
     keywords=[
-        "twisted", "klein", "api"
+        "twisted", "http", "api"
         ],
     install_requires=[
         "twisted"
