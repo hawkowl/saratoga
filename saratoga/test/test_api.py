@@ -90,6 +90,16 @@ class SaratogaErrorCatchingTests(TestCase):
                 "Implementation is missing version 2")
 
 
+    def test_missingMetadata(self):
+        APIDef = {"endpoints": []}
+
+        try:
+            api = SaratogaAPI(APIImpl, APIDef)
+        except Exception, e:
+            self.assertEqual(e.message,
+                "Definition requires a metadata section.")
+
+
     def test_missingImplementationInVersion(self):
 
         class APIImpl(object):
@@ -135,6 +145,18 @@ class SaratogaAPITests(TestCase):
             )
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
+
+
+    def test_serviceClass(self):
+        """
+        Test to make sure it uses the service class you tell it.
+        """
+        class Foo(object):
+            pass
+
+        serviceClass = Foo()
+        api = SaratogaAPI(APIImpl, APIDef, serviceClass)
+        self.assertEqual(api.serviceClass, serviceClass)
 
 
     def test_nonExistingEndpoint(self):
