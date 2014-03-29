@@ -10,11 +10,17 @@ class APIImpl(object):
         def example_GET(self, request, params):
             return params
 
+        def listResponse_GET(self, request, params):
+            return params["data"]
+
         def __init__(self):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
             self.requestParams_GET = self.example_GET
             self.responseParams_GET = self.example_GET
+            self.dictResponse_GET = self.listResponse_GET
+            self.listofdictResponse_GET = self.listResponse_GET
+
 
 APIDef = {
     "metadata": {"versions": [1]},
@@ -46,6 +52,18 @@ APIDef = {
                 "requiredResponseParams": ["cake", "muffin"],
                 "optionalResponseParams": ["pizza"]
             }]
+        },
+        {
+            "endpoint": "listResponse",
+            "getProcessors": [{"versions": [1], "responseFormat": "list"}]
+        },
+        {
+            "endpoint": "listofdictResponse",
+            "getProcessors": [{"versions": [1], "responseFormat": "listofdict"}]
+        },
+        {
+            "endpoint": "dictResponse",
+            "getProcessors": [{"versions": [1], "responseFormat": "dict"}]
         }
     ]
 }
@@ -145,6 +163,89 @@ class SaratogaAPITests(TestCase):
             )
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
+
+
+    def test_dictResponse(self):
+        """
+        Test that it allows a dict response.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"hi": "there"}}
+            )
+
+        return testItem(self.api, "/v1/dictResponse", params={
+            "data": {"hi": "there"}
+            }).addCallback(rendered)
+
+
+    def test_listResponse(self):
+        """
+        Test that it allows a list response.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": ["hi", "there"]}
+            )
+
+        return testItem(self.api, "/v1/listResponse",
+            params={"data": ["hi", "there"]}).addCallback(rendered)
+
+
+    def test_listofdictResponse(self):
+        """
+        Test that it allows a list of dict response.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": [{"hi": "there"}]}
+            )
+
+        return testItem(self.api, "/v1/listofdictResponse",
+            params={"data": [{"hi": "there"}]}).addCallback(rendered)
+
+
+    def test_dictResponseFailure(self):
+        """
+        Test that it handles responding with a non-dict gracefully when it is
+        set to respond with a dict.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "Result did not match the response format.")
+
+        d = testItem(self.api, "/v1/dictResponse",
+            params={"data": ["hi", "there"]})
+        return d.addCallback(rendered)
+
+
+    def test_listResponseFailure(self):
+        """
+        Test that it handles responding with a non-dict gracefully when it is
+        set to respond with a dict.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "Result did not match the response format.")
+
+        d = testItem(self.api, "/v1/listResponse",
+            params={"data": {"hi": "there"}})
+        return d.addCallback(rendered)
 
 
     def test_serviceClass(self):

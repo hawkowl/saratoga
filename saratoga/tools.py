@@ -12,12 +12,13 @@ def _verifyResponseParams(result, APIInfo):
 
         _checkResponseParamsDict(result, APIInfo)
 
-    elif returnFormat == "list":
+    elif returnFormat.startswith("list"):
         if not isinstance(result, list):
             raise BadResponseParams("Result did not match the response format.")
 
-        for item in result:
-            _checkResponseParamsDict(item, APIInfo)
+        if returnFormat == "listofdict":
+            for item in result:
+                _checkResponseParamsDict(item, APIInfo)
 
     return result
 
