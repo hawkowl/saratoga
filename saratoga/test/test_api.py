@@ -50,10 +50,79 @@ APIDef = {
     ]
 }
 
+class SaratogaErrorCatchingTests(TestCase):
+    """
+    Testing when people do funny things to Saratoga.
+    """
+    def test_undeclaredVersion(self):
+        APIDef = {
+            "metadata": {"versions": [1]},
+            "endpoints": [
+                {
+                    "endpoint": "example",
+                    "getProcessors": [{"versions": [1, 2]}]
+                }
+            ]
+        }
+
+        try:
+            api = SaratogaAPI(APIImpl, APIDef)
+        except Exception, e:
+            self.assertEqual(e.message,
+                "Version mismatch - 2 in example is not a declared version")
+
+
+    def test_missingVersionClass(self):
+        APIDef = {
+            "metadata": {"versions": [1,2]},
+            "endpoints": [
+                {
+                    "endpoint": "example",
+                    "getProcessors": [{"versions": [1, 2]}]
+                }
+            ]
+        }
+
+        try:
+            api = SaratogaAPI(APIImpl, APIDef)
+        except Exception, e:
+            self.assertEqual(e.message,
+                "Implementation is missing version 2")
+
+
+    def test_missingImplementationInVersion(self):
+
+        class APIImpl(object):
+            class v1(object):
+                def example_GET(self, request, params):
+                    return params
+            class v2(object):
+                """"""
+
+        APIDef = {
+            "metadata": {"versions": [1,2]},
+            "endpoints": [
+                {
+                    "endpoint": "example",
+                    "getProcessors": [{"versions": [1, 2]}]
+                }
+            ]
+        }
+
+        try:
+            api = SaratogaAPI(APIImpl, APIDef)
+        except Exception, e:
+            self.assertEqual(e.message,
+                "Implementation is missing the GET processor in the v2 example "
+                "endpoint")
+
+
+
 class SaratogaAPITests(TestCase):
 
     def setUp(self):
         self.api = SaratogaAPI(APIImpl, APIDef)
+
 
     def test_basic(self):
         """
@@ -66,6 +135,7 @@ class SaratogaAPITests(TestCase):
             )
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
+
 
     def test_nonExistingEndpoint(self):
         """
@@ -84,6 +154,7 @@ class SaratogaAPITests(TestCase):
         d = testItem(self.api, "/v1/nowhere")
         return d.addCallback(rendered)
 
+
     def test_requiredResponseParamsAllowsOptionalParams(self):
         """
         Test that required response params work, and will return an error if
@@ -99,6 +170,7 @@ class SaratogaAPITests(TestCase):
         d = testItem(self.api, "/v1/responseParams",
             params={"cake": "yes", "muffin": "yes", "pizza": "slice"})
         return d.addCallback(rendered)
+
 
     def test_requiredResponseParamsReturnsErrorIfGivenExtra(self):
         """
@@ -119,6 +191,7 @@ class SaratogaAPITests(TestCase):
             params={"cake": "yes", "muffin": "yes", "foo": "bar"})
         return d.addCallback(rendered)
 
+
     def test_requiredResponseParamsReturnsErrorIfNotGiven(self):
         """
         Test that required response params work, and will return an error if
@@ -136,6 +209,7 @@ class SaratogaAPITests(TestCase):
 
         d = testItem(self.api, "/v1/responseParams")
         return d.addCallback(rendered)
+
 
     def test_requiredParamsReturnsErrorIfNotGiven(self):
         """
@@ -215,4 +289,3 @@ class SaratogaAPITests(TestCase):
         d = testItem(self.api, "/v1/urlParams", params={"hello": "there"},
             useBody=False)
         return d.addCallback(rendered)
-

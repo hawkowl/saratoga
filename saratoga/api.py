@@ -162,6 +162,9 @@ class SaratogaAPI(object):
                     self.serviceClass)
             except TypeError:
                 i = getattr(self._implementation, "v{}".format(version))()
+            except Exception, e:
+                raise Exception(
+                    "Implementation is missing version {}".format(version))
 
             setattr(self.implementation, "v{}".format(version), i)
 
@@ -175,6 +178,14 @@ class SaratogaAPI(object):
                                 "not a declared version".format(
                                 version, api["endpoint"]))
 
+                        versionClass = getattr(
+                            self.implementation, "v{}".format(version))
+                        if not hasattr(versionClass,
+                            "{}_{}".format(api["endpoint"], verb)):
+                            raise Exception("Implementation is missing the {} " 
+                                "processor in the v{} {} endpoint".format(
+                                    verb, version, api["endpoint"]))
+
                         path = "/v{}/{}".format(version, api["endpoint"])
                         self.endpoints[verb][path] = (api, version, processor)
 
@@ -183,7 +194,7 @@ class SaratogaAPI(object):
 
         return self.resource
 
-    def run(self, port=8080):
+    def run(self, port=8080): # pragma: no cover
 
         from twisted.web.server import Site
         from twisted.internet import reactor
