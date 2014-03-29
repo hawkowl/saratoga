@@ -67,6 +67,23 @@ class SaratogaAPITests(TestCase):
 
         return testItem(self.api, "/v1/example").addCallback(rendered)
 
+    def test_nonExistingEndpoint(self):
+        """
+        Test that it handles non-existing endpoints gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Endpoint does not exist."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "Endpoint does not exist.")
+
+        d = testItem(self.api, "/v1/nowhere")
+        return d.addCallback(rendered)
+
     def test_requiredResponseParamsAllowsOptionalParams(self):
         """
         Test that required response params work, and will return an error if

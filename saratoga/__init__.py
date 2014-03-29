@@ -10,7 +10,7 @@ try:
     cmd = "--git-dir={}/../.git".format(basePath)
     res = check_output(["git", cmd, "rev-parse", "--short", "HEAD"])[:-1]
     __gitversion__ = "{} ({})".format(__version__, res)
-except Exception, e:
+except Exception, e: # pragma: no cover
     pass
 
 
