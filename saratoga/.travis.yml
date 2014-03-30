@@ -1,0 +1,18 @@
+env:
+    - TOX_ENV=pypy
+    - TOX_ENV=py27
+    - TOX_ENV=cov
+    - TOX_ENV=pyflakes
+
+language: python
+
+python:
+    - 2.7
+
+install:
+    - pip install coveralls tox
+
+script: tox -e $TOX_ENV
+
+after_success:
+    coveralls
