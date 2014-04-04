@@ -21,7 +21,7 @@ class InMemoryStringSharedSecretSource(object):
 
 class DummySharedSecretSource(object):
 
-    def getUserDetails(self, username):
+    def getUserDetails(self, username): # pragma: no cover
         raise AuthenticationFailed("Not a real authenticator.")
 
 
