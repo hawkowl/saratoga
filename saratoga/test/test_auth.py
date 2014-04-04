@@ -46,28 +46,3 @@ class AuthTests(unittest.TestCase):
                 "peter", "pass")).addErrback(_catch)
 
         return authDeferred
-
-
-    def test_inMemoryStringSharedSecretSourceHMACNotImplemented(self):
-
-        def _catch(res):
-            self.assertIsInstance(res.value, NotImplementedError)
-
-        users = [
-            {
-                "username": "bob",
-                "password": "42"
-            },
-            {
-                "username": "alice",
-                "password": "wonderland"
-            }
-        ]
-
-        authenticator = auth.DefaultAuthenticator(
-            auth.InMemoryStringSharedSecretSource(users))
-
-        authDeferred = authenticator.auth_usernameAndHMAC(
-            "alice", "this is not a hmac").addErrback(_catch)
-
-        return authDeferred

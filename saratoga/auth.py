@@ -59,13 +59,3 @@ class DefaultAuthenticator(object):
         d = self._getUserDetails(username)
         d.addCallback(_continue)
         return d
-
-
-    def auth_usernameAndHMAC(self, username, HMAC):
-
-        def _continue(result):
-            raise NotImplementedError("Sorry, HMAC isn't implemented yet.")
-
-        d = self._getUserDetails(username)
-        d.addCallback(_continue)
-        return d

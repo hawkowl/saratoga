@@ -109,7 +109,7 @@ class SaratogaResource(Resource):
                 raise BadRequestParams("Forbidden keyword.")
 
             if extraParams:
-                params = params + extraParams
+                params = dict(params.items() + extraParams.items())
 
             d = maybeDeferred(func, self.api.serviceClass, request, params)
 
@@ -156,7 +156,7 @@ class SaratogaResource(Resource):
                 auth = request.getHeader("Authorization")
 
                 if not auth:
-                    fail = AuthenticationRequired("Authetication required.")
+                    fail = AuthenticationRequired("Authentication required.")
                     return _quickfail(fail)
 
                 
