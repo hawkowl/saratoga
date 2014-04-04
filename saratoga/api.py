@@ -1,4 +1,4 @@
-from twisted.internet.defer import maybeDeferred, succeed, Deferred
+from twisted.internet.defer import maybeDeferred, Deferred
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web.resource import Resource

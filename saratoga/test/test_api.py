@@ -181,9 +181,8 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"foo": "bar"}}
             )
 
-        return testItem(self.api, "/v1/paramOptions", params={
-            "foo": "bar"
-            }).addCallback(rendered)
+        return testItem(self.api, "/v1/paramOptions", params={"foo": "bar"}
+            ).addCallback(rendered)
 
 
     def test_paramOptionsFailure(self):
@@ -197,8 +196,8 @@ class SaratogaAPITests(TestCase):
                 "data": "'cake' isn't part of [\"bar\", \"baz\"] in foo"}
             )
 
-        return testItem(self.api, "/v1/paramOptions",
-            params={"foo": "cake"}).addCallback(rendered)
+        return testItem(self.api, "/v1/paramOptions", params={"foo": "cake"}
+            ).addCallback(rendered)
 
 
     def test_dictResponse(self):
@@ -212,8 +211,7 @@ class SaratogaAPITests(TestCase):
             )
 
         return testItem(self.api, "/v1/dictResponse", params={
-            "data": {"hi": "there"}
-            }).addCallback(rendered)
+            "data": {"hi": "there"}}).addCallback(rendered)
 
 
     def test_listResponse(self):
