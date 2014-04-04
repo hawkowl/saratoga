@@ -21,6 +21,7 @@ class APIImpl(object):
             self.dictResponse_GET = self.listResponse_GET
             self.listofdictResponse_GET = self.listResponse_GET
             self.paramOptions_GET = self.example_GET
+            self.requiresAuth_GET = self.example_GET
 
 
 APIDef = {
@@ -70,6 +71,11 @@ APIDef = {
             "endpoint": "paramOptions",
             "getProcessors": [{"versions": [1], "requiredParams": [
             {"param": "foo", "paramOptions": ["bar", {"data": "baz"}]}]}]
+        },
+        {
+            "endpoint": "requiresAuth",
+            "requiresAuthentication": True,
+            "getProcessors": [{"versions": [1]}]
         }
     ]
 }
@@ -171,6 +177,23 @@ class SaratogaAPITests(TestCase):
         return testItem(self.api, "/v1/example").addCallback(rendered)
 
 
+    def test_authRequiredWhenDefaultServiceClass(self):
+        """
+        Test that authentication without an authenticator fails.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error", "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "Authentication required, but there is not an available "
+                "authenticator.")
+
+        return testItem(self.api, "/v1/requiresAuth").addCallback(rendered)
+
+
     def test_paramOptions(self):
         """
         Test that param options work.
@@ -198,6 +221,21 @@ class SaratogaAPITests(TestCase):
 
         return testItem(self.api, "/v1/paramOptions", params={"foo": "cake"}
             ).addCallback(rendered)
+
+    def test_reservedParamsFailure(self):
+        """
+        Test that it handles responding with a reserved parameter gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail",
+                "data": "Forbidden keyword."}
+            )
+
+        d = testItem(self.api, "/v1/example",
+            params={"saratoga_user": "aaa"})
+        return d.addCallback(rendered)
 
 
     def test_dictResponse(self):

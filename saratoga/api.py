@@ -7,9 +7,10 @@ import twisted
 from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga import (
     BadRequestParams,
-    #BadResponseParams,
+    AuthenticationFailed,
     AuthenticationRequired,
     DoesNotExist,
+    APIError,
     __gitversion__
 )
 
@@ -77,6 +78,8 @@ class SaratogaResource(Resource):
             request.write(json.dumps(response))
             request.finish()
 
+            return 1
+
 
         def _runAPICall(extraParams, res):
 
@@ -137,9 +140,14 @@ class SaratogaResource(Resource):
             # Check for authentication. #
             #############################
 
-            reqAuth = processor.get("requiresAuthentication", False)
+            reqAuth = api.get("requiresAuthentication", False)
 
             if reqAuth:
+
+                if not hasattr(self.api.serviceClass, "auth"):
+                    fail = APIError("Authentication required, but there is not"
+                        " an available authenticator.")
+                    return _quickfail(fail)
 
                 def _authAdditional(canonicalUsername):
 
@@ -160,7 +168,7 @@ class SaratogaResource(Resource):
                             request.getUser(), request.getPassword()))
 
                 else:
-                    fail = AuthenticationRequired(
+                    fail = AuthenticationFailed(
                         "Unsupported Authorization type '{}'".format(authType))
                     return _quickfail(fail)
 

@@ -28,7 +28,7 @@ class DummySharedSecretSource(object):
 
 class DefaultAuthenticator(object):
 
-    def __init__(self, sharedSecretSource, enableHMAC=False):
+    def __init__(self, sharedSecretSource):
         """
         Initialise the Haddock Authenticator.
         """
