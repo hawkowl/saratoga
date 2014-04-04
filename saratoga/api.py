@@ -1,19 +1,17 @@
-from twisted.web.resource import Resource
-from twisted.internet.defer import maybeDeferred
-from twisted.python.failure import Failure
+from twisted.internet.defer import maybeDeferred, succeed
 from twisted.python import log
+from twisted.python.failure import Failure
+from twisted.web.resource import Resource
 import twisted
 
 from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga import (
     BadRequestParams,
     #BadResponseParams,
-    #AuthenticationRequired,
+    AuthenticationRequired,
     DoesNotExist,
     __gitversion__
 )
-
-
 
 import json
 
@@ -79,11 +77,43 @@ class SaratogaResource(Resource):
             request.write(json.dumps(response))
             request.finish()
 
+
+        def _runAPICall(ignored, res):
+
+            api, version, processor = res
+
+            ########################
+            # Get some parameters. #
+            ########################
+
+            paramsType = processor.get("paramsType", "jsonbody")
+
+            if paramsType == "url":
+                args = request.args
+                params = {}
+                for key, data in args.iteritems():
+                    params[key] = data
+                params = _getParams(params, processor)
+            elif paramsType == "jsonbody":
+                requestContent = request.content.read()
+                if requestContent:
+                    params = json.loads(requestContent)
+                else:
+                    params = {}
+                params = _getParams(params, processor)
+
+            d = maybeDeferred(func, self.api.serviceClass, request, params)
+
+            return d
+
+        def _quickfail(fail):
+
+            return _error(Failure(fail), request, None, None)
+
+
         request.setHeader("Content-Type", "application/json; charset=utf-8")
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
                 __gitversion__, twisted.__version__))
-
-        #print "Looking for {}".format(request.path)
 
         api, version, processor = self.api.endpoints[request.method].get(
             request.path, (None, None, None))
@@ -95,37 +125,35 @@ class SaratogaResource(Resource):
             func = getattr(versionClass, "{}_{}".format(
                 api["endpoint"], request.method)).im_func
 
-            ########################
-            # Get some parameters. #
-            ########################
+            #############################
+            # Check for authentication. #
+            #############################
 
-            paramsType = processor.get("paramsType", "jsonbody")
+            reqAuth = processor.get("requiresAuthentication", False)
 
-            try:
-                if paramsType == "url":
-                    args = request.args
-                    params = {}
-                    for key, data in args.iteritems():
-                        params[key] = data
-                    params = _getParams(params, processor)
-                elif paramsType == "jsonbody":
-                    requestContent = request.content.read()
-                    if requestContent:
-                        params = json.loads(requestContent)
-                    else:
-                        params = {}
-                    params = _getParams(params, processor)
-            except Exception, e:
-                _error(Failure(e), request, api, processor)
-                return 1
+            if reqAuth:
 
-            d = maybeDeferred(func, self.api.serviceClass, request, params)
+                auth = request.getHeader("Authorization")
+
+                if not auth:
+                    fail = AuthenticationRequired("Authetication required.")
+                    return _quickfail(fail)
+
+                authType, authDetails = auth.split()
+                d = Deferred()
+
+                d.addCallback(_runAPICall, (api, version, processor))
+
+            else:
+
+                d = maybeDeferred(_runAPICall, False, (api, version, processor))
+
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
 
         else:
             fail = DoesNotExist("Endpoint does not exist.")
-            _error(Failure(fail), request, None, None)
+            _quickfail(fail)
 
         return 1
 
