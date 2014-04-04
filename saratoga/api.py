@@ -1,4 +1,4 @@
-from twisted.internet.defer import maybeDeferred, succeed
+from twisted.internet.defer import maybeDeferred, succeed, Deferred
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web.resource import Resource
@@ -78,7 +78,7 @@ class SaratogaResource(Resource):
             request.finish()
 
 
-        def _runAPICall(ignored, res):
+        def _runAPICall(extraParams, res):
 
             api, version, processor = res
 
@@ -101,6 +101,12 @@ class SaratogaResource(Resource):
                 else:
                     params = {}
                 params = _getParams(params, processor)
+
+            if "saratoga_user" in params:
+                raise BadRequestParams("Forbidden keyword.")
+
+            if extraParams:
+                params = params + extraParams
 
             d = maybeDeferred(func, self.api.serviceClass, request, params)
 
@@ -125,6 +131,8 @@ class SaratogaResource(Resource):
             func = getattr(versionClass, "{}_{}".format(
                 api["endpoint"], request.method)).im_func
 
+            d = Deferred()
+
             #############################
             # Check for authentication. #
             #############################
@@ -133,23 +141,36 @@ class SaratogaResource(Resource):
 
             if reqAuth:
 
+                def _authAdditional(canonicalUsername):
+
+                    return {"saratoga_user": canonicalUsername}
+
                 auth = request.getHeader("Authorization")
 
                 if not auth:
                     fail = AuthenticationRequired("Authetication required.")
                     return _quickfail(fail)
 
+                
                 authType, authDetails = auth.split()
-                d = Deferred()
+                
+                if authType.lower() == "basic":
+                    d.addCallback(lambda _:
+                        self.api.serviceClass.auth.auth_usernameAndPassword(
+                            request.getUser(), request.getPassword()))
 
-                d.addCallback(_runAPICall, (api, version, processor))
+                else:
+                    fail = AuthenticationRequired(
+                        "Unsupported Authorization type '{}'".format(authType))
+                    return _quickfail(fail)
 
-            else:
+                d.addCallback(_authAdditional)
 
-                d = maybeDeferred(_runAPICall, False, (api, version, processor))
-
+            d.addCallback(_runAPICall, (api, version, processor))
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
+
+            d.callback(False)
 
         else:
             fail = DoesNotExist("Endpoint does not exist.")
