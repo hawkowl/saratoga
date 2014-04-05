@@ -293,7 +293,7 @@ class SaratogaAPITests(TestCase):
             )
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(),
-                "Result did not match the response format.")
+                "Result is not a dict.")
 
         d = testItem(self.api, "/v1/dictResponse",
             params={"data": ["hi", "there"]})
@@ -313,7 +313,7 @@ class SaratogaAPITests(TestCase):
             )
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(),
-                "Result did not match the response format.")
+                "Result is not a list.")
 
         d = testItem(self.api, "/v1/listResponse",
             params={"data": {"hi": "there"}})

@@ -4,17 +4,17 @@ import json
 
 def _verifyResponseParams(result, APIInfo):
 
-    returnFormat = APIInfo.get("responseFormat", "none")
+    returnFormat = APIInfo.get("responseFormat", "dict")
 
     if returnFormat == "dict":
         if not isinstance(result, dict):
-            raise BadResponseParams("Result did not match the response format.")
+            raise BadResponseParams("Result is not a dict.")
 
         _checkResponseParamsDict(result, APIInfo)
 
     elif returnFormat.startswith("list"):
         if not isinstance(result, list):
-            raise BadResponseParams("Result did not match the response format.")
+            raise BadResponseParams("Result is not a list.")
 
         if returnFormat == "listofdict":
             for item in result:
