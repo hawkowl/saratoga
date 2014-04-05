@@ -1,0 +1,11 @@
+[run]
+include =
+    saratoga/*
+omit =
+    saratoga/test/*
+
+[report]
+exclude_lines =
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
