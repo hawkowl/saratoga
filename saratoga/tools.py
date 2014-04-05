@@ -4,7 +4,7 @@ import json
 
 def _verifyResponseParams(result, APIInfo):
 
-    returnFormat = APIInfo.get("responseFormat", "dict")
+    returnFormat = APIInfo.get("responseFormat", "none")
 
     if returnFormat == "dict":
         if not isinstance(result, dict):
