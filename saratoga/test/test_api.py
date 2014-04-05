@@ -135,7 +135,7 @@ class SaratogaErrorCatchingTests(TestCase):
         class APIImpl(object):
             class v1(object):
                 def example_GET(self, request, params):
-                    return params
+                    """"""
             class v2(object):
                 """"""
 
