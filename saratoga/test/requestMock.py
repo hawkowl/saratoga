@@ -25,8 +25,7 @@ def _render(resource, request):
         raise ValueError("Unexpected return value: %r" % (result,))
 
 def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
-                body=None, headers=None, args=None,
-                reactor=None):
+                body=None, headers=None, args=None, reactor=None):
     """
     requestMock is originally from Klein, with the improvements I made in Klein
     PR #30.
@@ -114,7 +113,7 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
 
 
 def _testItem(resource, path, params=None, method="GET", useBody=True,
-             headers=None):
+              headers=None):
 
     def _cb(result, request):
         return request
