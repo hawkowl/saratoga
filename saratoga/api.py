@@ -5,7 +5,7 @@ from twisted.web.resource import Resource
 import twisted
 
 from saratoga.tools import _verifyResponseParams, _getParams
-from saratoga.test.requestMock import testItem
+from saratoga.test.requestMock import _testItem as testItem
 from saratoga import (
     BadRequestParams,
     AuthenticationFailed,
@@ -255,7 +255,7 @@ class SaratogaAPI(object):
 
     def test(self, path, params=None, headers=None, method="GET", useBody=True):
 
-        return testItem(self.resource, params=params, headers=headers,
+        return testItem(self.resource, path, params=params, headers=headers,
             method=method, useBody=useBody)
 
     def run(self, port=8080): # pragma: no cover

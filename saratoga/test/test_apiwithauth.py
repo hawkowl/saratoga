@@ -1,6 +1,5 @@
 from twisted.trial.unittest import TestCase
 
-from saratoga.test.requestMock import testItem
 from saratoga.api import SaratogaAPI
 from saratoga import auth
 
@@ -60,7 +59,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
                 {"status": "fail", "data": "Authentication failed."}
             )
 
-        return testItem(self.api, "/v1/requiresAuth", headers={
+        return self.api.test("/v1/requiresAuth", headers={
             "Authorization": ["BASIC {}".format(b64("bob:word"))]
             }).addCallback(rendered)
 
@@ -76,7 +75,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
                 "'OMGLOLAUTH'"}
             )
 
-        return testItem(self.api, "/v1/requiresAuth", headers={
+        return self.api.test("/v1/requiresAuth", headers={
             "Authorization": ["OMGLOLAUTH FIODGNDSEGOUER"]
             }).addCallback(rendered)
 
@@ -91,7 +90,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
                 {"status": "fail", "data": "Authentication required."}
             )
 
-        return testItem(self.api, "/v1/requiresAuth").addCallback(rendered)
+        return self.api.test("/v1/requiresAuth").addCallback(rendered)
 
 
     def test_correctBasicAuth(self):
@@ -104,12 +103,6 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
                 {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
             )
 
-        return testItem(self.api, "/v1/requiresAuth", headers={
+        return self.api.test("/v1/requiresAuth", headers={
             "Authorization": ["BASIC {}".format(b64("bob:pass"))]
             }).addCallback(rendered)
-
-
-
-
-
-

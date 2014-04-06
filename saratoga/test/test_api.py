@@ -1,6 +1,5 @@
 from twisted.trial.unittest import TestCase
 
-from saratoga.test.requestMock import testItem
 from saratoga.api import SaratogaAPI
 
 import json
@@ -163,6 +162,12 @@ class SaratogaAPITests(TestCase):
     def setUp(self):
         self.api = SaratogaAPI(APIImpl, APIDef)
 
+    def test_getResource(self):
+        """
+        Check that Saratoga returns the correct resource.
+        """
+        self.assertIs(self.api.resource, self.api.getResource())
+
 
     def test_basic(self):
         """
@@ -174,7 +179,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {}}
             )
 
-        return testItem(self.api, "/v1/example").addCallback(rendered)
+        return self.api.test("/v1/example").addCallback(rendered)
 
 
     def test_authRequiredWhenDefaultServiceClass(self):
@@ -191,7 +196,7 @@ class SaratogaAPITests(TestCase):
                 "Authentication required, but there is not an available "
                 "authenticator.")
 
-        return testItem(self.api, "/v1/requiresAuth").addCallback(rendered)
+        return self.api.test("/v1/requiresAuth").addCallback(rendered)
 
 
     def test_paramOptions(self):
@@ -204,7 +209,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"foo": "bar"}}
             )
 
-        return testItem(self.api, "/v1/paramOptions", params={"foo": "bar"}
+        return self.api.test("/v1/paramOptions", params={"foo": "bar"}
             ).addCallback(rendered)
 
 
@@ -219,7 +224,7 @@ class SaratogaAPITests(TestCase):
                 "data": "'cake' isn't part of [\"bar\", \"baz\"] in foo"}
             )
 
-        return testItem(self.api, "/v1/paramOptions", params={"foo": "cake"}
+        return self.api.test("/v1/paramOptions", params={"foo": "cake"}
             ).addCallback(rendered)
 
     def test_reservedParamsFailure(self):
@@ -233,8 +238,7 @@ class SaratogaAPITests(TestCase):
                 "data": "Forbidden keyword."}
             )
 
-        d = testItem(self.api, "/v1/example",
-            params={"saratoga_user": "aaa"})
+        d = self.api.test("/v1/example", params={"saratoga_user": "aaa"})
         return d.addCallback(rendered)
 
 
@@ -248,8 +252,8 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"hi": "there"}}
             )
 
-        return testItem(self.api, "/v1/dictResponse", params={
-            "data": {"hi": "there"}}).addCallback(rendered)
+        return self.api.test("/v1/dictResponse",
+            params={"data": {"hi": "there"}}).addCallback(rendered)
 
 
     def test_listResponse(self):
@@ -262,7 +266,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": ["hi", "there"]}
             )
 
-        return testItem(self.api, "/v1/listResponse",
+        return self.api.test("/v1/listResponse",
             params={"data": ["hi", "there"]}).addCallback(rendered)
 
 
@@ -276,7 +280,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": [{"hi": "there"}]}
             )
 
-        return testItem(self.api, "/v1/listofdictResponse",
+        return self.api.test("/v1/listofdictResponse",
             params={"data": [{"hi": "there"}]}).addCallback(rendered)
 
 
@@ -295,7 +299,7 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(warnings[0].getErrorMessage(),
                 "Result is not a dict.")
 
-        d = testItem(self.api, "/v1/dictResponse",
+        d = self.api.test("/v1/dictResponse",
             params={"data": ["hi", "there"]})
         return d.addCallback(rendered)
 
@@ -315,7 +319,7 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(warnings[0].getErrorMessage(),
                 "Result is not a list.")
 
-        d = testItem(self.api, "/v1/listResponse",
+        d = self.api.test("/v1/listResponse",
             params={"data": {"hi": "there"}})
         return d.addCallback(rendered)
 
@@ -346,7 +350,7 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(warnings[0].getErrorMessage(),
                 "Endpoint does not exist.")
 
-        d = testItem(self.api, "/v1/nowhere")
+        d = self.api.test("/v1/nowhere")
         return d.addCallback(rendered)
 
 
@@ -362,7 +366,7 @@ class SaratogaAPITests(TestCase):
                 "data": {"cake": "yes", "muffin": "yes", "pizza": "slice"}}
             )
 
-        d = testItem(self.api, "/v1/responseParams",
+        d = self.api.test("/v1/responseParams",
             params={"cake": "yes", "muffin": "yes", "pizza": "slice"})
         return d.addCallback(rendered)
 
@@ -382,7 +386,7 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(warnings[0].getErrorMessage(),
                 "Unexpected response parameters: 'foo'")
 
-        d = testItem(self.api, "/v1/responseParams",
+        d = self.api.test("/v1/responseParams",
             params={"cake": "yes", "muffin": "yes", "foo": "bar"})
         return d.addCallback(rendered)
 
@@ -402,8 +406,7 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(warnings[0].getErrorMessage(),
                 "Missing response parameters: 'cake', 'muffin'")
 
-        d = testItem(self.api, "/v1/responseParams")
-        return d.addCallback(rendered)
+        return self.api.test("/v1/responseParams").addCallback(rendered)
 
 
     def test_requiredParamsReturnsErrorIfNotGiven(self):
@@ -417,7 +420,7 @@ class SaratogaAPITests(TestCase):
                 "data": "Missing request parameters: 'goodbye', 'hello'"}
             )
 
-        d = testItem(self.api, "/v1/requestParams")
+        d = self.api.test("/v1/requestParams")
         return d.addCallback(rendered)
 
 
@@ -433,7 +436,7 @@ class SaratogaAPITests(TestCase):
                 "data": "Unexpected request parameters: 'unspecified'"}
             )
 
-        d = testItem(self.api, "/v1/requestParams", params={
+        d = self.api.test("/v1/requestParams", params={
             "hello": "yes", "goodbye": "no", "unspecified": "yes"
             })
         return d.addCallback(rendered)
@@ -451,7 +454,7 @@ class SaratogaAPITests(TestCase):
                 "data": {"hello": "yes", "goodbye": "no", "the": "beatles"}}
             )
 
-        d = testItem(self.api, "/v1/requestParams", params={
+        d = self.api.test("/v1/requestParams", params={
             "hello": "yes", "goodbye": "no", "the": "beatles"
             })
         return d.addCallback(rendered)
@@ -467,7 +470,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"hello": "there"}}
             )
 
-        d = testItem(self.api, "/v1/jsonbodyParams", params={"hello": "there"})
+        d = self.api.test("/v1/jsonbodyParams", params={"hello": "there"})
         return d.addCallback(rendered)
 
 
@@ -481,6 +484,6 @@ class SaratogaAPITests(TestCase):
                 {"status": "success", "data": {"hello": "there"}}
             )
 
-        d = testItem(self.api, "/v1/urlParams", params={"hello": "there"},
+        d = self.api.test("/v1/urlParams", params={"hello": "there"},
             useBody=False)
         return d.addCallback(rendered)

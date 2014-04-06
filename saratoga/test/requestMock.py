@@ -113,7 +113,7 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
     return request
 
 
-def testItem(resource, path, params=None, method="GET", useBody=True,
+def _testItem(resource, path, params=None, method="GET", useBody=True,
              headers=None):
 
     def _cb(result, request):
