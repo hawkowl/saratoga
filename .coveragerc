@@ -3,6 +3,8 @@ include =
     saratoga/*
 omit =
     saratoga/test/*
+fail-under = 
+    100
 
 [report]
 exclude_lines =
