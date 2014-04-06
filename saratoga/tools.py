@@ -1,4 +1,4 @@
-from saratoga import BadRequestParams, BadResponseParams
+from saratoga import BadRequestParams, BadResponseParams, APIError
 
 import json
 
@@ -9,16 +9,16 @@ def _verifyResponseParams(result, APIInfo):
     if returnFormat == "dict":
         if not isinstance(result, dict):
             raise BadResponseParams("Result is not a dict.")
-
         _checkResponseParamsDict(result, APIInfo)
-
     elif returnFormat.startswith("list"):
         if not isinstance(result, list):
             raise BadResponseParams("Result is not a list.")
-
         if returnFormat == "listofdict":
             for item in result:
                 _checkResponseParamsDict(item, APIInfo)
+    else:
+        raise APIError(
+            "{} is not a valid response format.".format(returnFormat))
 
     return result
 
@@ -30,11 +30,11 @@ def _normaliseParams(params):
     for param in params:
         if isinstance(param, dict):
             options = []
-            if param.get("paramOptions", None):
+            if param.get("paramOptions", None): # pragma: no branch
                 for option in param.get("paramOptions", None):
                     if isinstance(option, dict):
                         options.append(option["data"])
-                    elif isinstance(option, basestring):
+                    else:
                         options.append(option)
 
             paramKeys.append(param["param"])
@@ -42,7 +42,7 @@ def _normaliseParams(params):
                 "param": param["param"],
                 "paramOptions": options
             })
-        elif isinstance(param, basestring):
+        else:
             paramKeys.append(param)
             finishedParams.append({
                 "param": param,

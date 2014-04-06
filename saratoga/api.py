@@ -105,6 +105,9 @@ class SaratogaResource(Resource):
                 else:
                     params = {}
                 params = _getParams(params, processor)
+            else:
+                raise APIError(
+                    "{} is not a valid parameter type.".format(paramsType))
 
             if "saratoga_user" in params:
                 raise BadRequestParams("Forbidden keyword.")

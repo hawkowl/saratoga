@@ -5,6 +5,7 @@ omit =
     saratoga/test/*
 fail-under = 
     100
+branch = True
 
 [report]
 exclude_lines =

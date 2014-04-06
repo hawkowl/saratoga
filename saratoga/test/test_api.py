@@ -12,6 +12,9 @@ class APIImpl(object):
         def listResponse_GET(self, request, params):
             return params["data"]
 
+        def exception_GET(self, request, params):
+            raise Exception("OMG LOL WTF")
+
         def __init__(self):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
@@ -21,6 +24,8 @@ class APIImpl(object):
             self.listofdictResponse_GET = self.listResponse_GET
             self.paramOptions_GET = self.example_GET
             self.requiresAuth_GET = self.example_GET
+            self.invalidParamsType_GET = self.example_GET
+            self.invalidResponseFormat_GET = self.example_GET
 
 
 APIDef = {
@@ -75,6 +80,18 @@ APIDef = {
             "endpoint": "requiresAuth",
             "requiresAuthentication": True,
             "getProcessors": [{"versions": [1]}]
+        },
+        {
+            "endpoint": "exception",
+            "getProcessors": [{"versions": [1]}]
+        },
+        {
+            "endpoint": "invalidParamsType",
+            "getProcessors": [{"versions": [1], "paramsType":"bar"}]
+        },
+        {
+            "endpoint": "invalidResponseFormat",
+            "getProcessors": [{"versions": [1], "responseFormat":"bar"}]
         }
     ]
 }
@@ -181,6 +198,20 @@ class SaratogaAPITests(TestCase):
 
         return self.api.test("/v1/example").addCallback(rendered)
 
+    def test_handlingOfExceptions(self):
+        """
+        Test that throwing a generic exception is handled gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error", "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(), "OMG LOL WTF")
+
+        return self.api.test("/v1/exception").addCallback(rendered)
+
 
     def test_authRequiredWhenDefaultServiceClass(self):
         """
@@ -239,6 +270,42 @@ class SaratogaAPITests(TestCase):
             )
 
         d = self.api.test("/v1/example", params={"saratoga_user": "aaa"})
+        return d.addCallback(rendered)
+
+
+    def test_invalidParamsType(self):
+        """
+        Test that it handles an incorrect paramsType gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "bar is not a valid parameter type.")
+
+        d = self.api.test("/v1/invalidParamsType")
+        return d.addCallback(rendered)
+
+
+    def test_invalidResponseFormat(self):
+        """
+        Test that it handles an incorrect responseFormat gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(),
+                "bar is not a valid response format.")
+
+        d = self.api.test("/v1/invalidResponseFormat")
         return d.addCallback(rendered)
 
 
