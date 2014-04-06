@@ -129,6 +129,6 @@ def testItem(resource, path, params=None, method="GET", useBody=True,
     else:
         myPath = requestMock(path, method=method, headers=headers)
 
-    d = _render(resource.getResource(), myPath)
+    d = _render(resource, myPath)
     d.addCallback(_cb, myPath)
     return d
