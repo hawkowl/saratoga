@@ -10,7 +10,7 @@ from twisted.internet.defer import succeed
 import json
 
 
-def _render(resource, request): # pragma: no cover
+def _render(resource, request):
     result = resource.render(request)
     if isinstance(result, str):
         request.write(result)
@@ -26,7 +26,7 @@ def _render(resource, request): # pragma: no cover
 
 def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
                 body=None, headers=None, args=None,
-                reactor=None): # pragma: no cover
+                reactor=None):
     """
     requestMock is originally from Klein, with the improvements I made in Klein
     PR #30.
