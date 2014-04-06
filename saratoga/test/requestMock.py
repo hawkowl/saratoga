@@ -120,14 +120,14 @@ def _testItem(resource, path, params=None, method="GET", useBody=True,
 
     if params:
         if useBody:
-            myPath = requestMock(path, body=json.dumps(params), method=method,
+            req = requestMock(path, body=json.dumps(params), method=method,
                 headers=headers)
         else:
-            myPath = requestMock(path, args=params, method=method,
+            req = requestMock(path, args=params, method=method,
                 headers=headers)
     else:
-        myPath = requestMock(path, method=method, headers=headers)
+        req = requestMock(path, method=method, headers=headers)
 
-    d = _render(resource, myPath)
-    d.addCallback(_cb, myPath)
+    d = _render(resource, req)
+    d.addCallback(_cb, req)
     return d
