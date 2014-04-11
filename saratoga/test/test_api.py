@@ -44,8 +44,7 @@ APIDef = {
                         "hello": {},
                         "goodbye": {}
                     }
-                }
-                "requiredParams": ["hello", "goodbye"],
+                },
                 "optionalParams": ["the"]
             }]
         },

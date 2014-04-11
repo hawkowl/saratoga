@@ -8,6 +8,7 @@ from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga.test.requestMock import _testItem as testItem
 from saratoga import (
     BadRequestParams,
+    BadResponseParams,
     AuthenticationFailed,
     AuthenticationRequired,
     DoesNotExist,
@@ -46,8 +47,7 @@ class SaratogaResource(Resource):
                 try:
                     validate(result, schema)
                 except Exception, e:
-                    e.errorcode = 500
-                    raise e
+                    raise BadResponseParams(e)
 
             response = {
                 "status": "success",
@@ -109,10 +109,9 @@ class SaratogaResource(Resource):
 
             if schema:
                 try:
-                    validate(userParams("params"), schema)
+                    validate(userParams["params"], schema)
                 except Exception, e:
-                    e.errorcode = 400
-                    raise e
+                    raise BadRequestParams(e)
 
             if extraParams:
                 params = dict(userParams.items() + extraParams.items())
