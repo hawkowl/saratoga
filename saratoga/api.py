@@ -175,7 +175,7 @@ class SaratogaResource(Resource):
                 try:
                     authDetails = b64decode(authDetails)
                     authUser, authPassword = authDetails.split(":")
-                except Exception, e:
+                except:
                     fail = AuthenticationFailed(
                         "Malformed Authorization header.")
                     return _quickfail(fail)
