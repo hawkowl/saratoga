@@ -48,7 +48,7 @@ class AuthTests(unittest.TestCase):
         return authDeferred
 
 
-    def test_inMemoryStringSharedSecretSourcePassword(self):
+    def test_inMemoryStringSharedSecretSourceHMAC(self):
 
         def _catch(res):
             self.assertIsInstance(res.value, AuthenticationFailed)

@@ -73,8 +73,6 @@ class DefaultAuthenticator(object):
 
             hmacResult = hmacObj.hexdigest()
 
-            print hmacResult
-
             if hmacUser == hmacResult:
                 uName = result.get("canonicalUsername", result.get("Username"))
                 return defer.succeed(uName)

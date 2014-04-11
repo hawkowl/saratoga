@@ -119,7 +119,24 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
             )
 
         return self.api.test("/v1/requiresAuth", {}, headers={
-            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:pass"))]
+            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
+                "3a28b"))]
+            }).addCallback(rendered)
+
+
+    def test_wrongHMACAuth(self):
+        """
+        Test that wrong HMACs are rejected.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Authentication failed."}
+            )
+
+        return self.api.test("/v1/requiresAuth", {"hi": "there"}, headers={
+            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
+                "3a28b"))]
             }).addCallback(rendered)
 
 
@@ -135,5 +152,6 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
             )
 
         return self.api.test("/v1/requiresAuth", {}, headers={
-            "Authorization": ["HMAC-MD5 {}".format(b64("bob:pass"))]
+            "Authorization": ["HMAC-MD5 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
+                "3a28b"))]
             }).addCallback(rendered)
