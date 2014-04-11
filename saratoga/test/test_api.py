@@ -7,10 +7,10 @@ import json
 class APIImpl(object):
     class v1(object):
         def example_GET(self, request, params):
-            return params
+            return params["params"]
 
         def listResponse_GET(self, request, params):
-            return params["data"]
+            return params["params"]["data"]
 
         def exception_GET(self, request, params):
             raise Exception("OMG LOL WTF")
@@ -36,17 +36,15 @@ APIDef = {
             "getProcessors": [{"versions": [1]}]
         },
         {
-            "endpoint": "jsonbodyParams",
-            "getProcessors": [{"versions": [1]}]
-        },
-        {
-            "endpoint": "urlParams",
-            "getProcessors": [{"versions": [1], "paramsType": "url"}]
-        },
-        {
             "endpoint": "requestParams",
             "getProcessors": [{
                 "versions": [1],
+                "requestSchema": {
+                    "properties": {
+                        "hello": {},
+                        "goodbye": {}
+                    }
+                }
                 "requiredParams": ["hello", "goodbye"],
                 "optionalParams": ["the"]
             }]
@@ -270,20 +268,6 @@ class SaratogaAPITests(TestCase):
 
         return self.api.test("/v1/paramOptions", params={"foo": "cake"}
             ).addCallback(rendered)
-
-    def test_reservedParamsFailure(self):
-        """
-        Test that it handles responding with a reserved parameter gracefully.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "fail",
-                "data": "Forbidden keyword."}
-            )
-
-        d = self.api.test("/v1/example", params={"saratoga_user": "aaa"})
-        return d.addCallback(rendered)
 
 
     def test_invalidParamsType(self):
@@ -537,33 +521,4 @@ class SaratogaAPITests(TestCase):
         d = self.api.test("/v1/requestParams", params={
             "hello": "yes", "goodbye": "no", "the": "beatles"
             })
-        return d.addCallback(rendered)
-
-
-    def test_jsonbodyParams(self):
-        """
-        Test that params delivered through JSON work.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"hello": "there"}}
-            )
-
-        d = self.api.test("/v1/jsonbodyParams", params={"hello": "there"})
-        return d.addCallback(rendered)
-
-
-    def test_urlParams(self):
-        """
-        Test that params delivered through URL params work.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"hello": "there"}}
-            )
-
-        d = self.api.test("/v1/urlParams", params={"hello": "there"},
-            useBody=False)
         return d.addCallback(rendered)

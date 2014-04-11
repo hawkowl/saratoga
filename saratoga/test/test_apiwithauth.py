@@ -10,7 +10,7 @@ from base64 import b64encode as b64
 class APIImpl(object):
     class v1(object):
         def requiresAuth_GET(self, request, params):
-            return params
+            return params["auth"]
 
 
 APIDef = {
@@ -130,7 +130,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
+                {"status": "success", "data": {"username": "bob@bob.com"}}
             )
 
         return self.api.test("/v1/requiresAuth", headers={
@@ -145,7 +145,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
+                {"status": "success", "data": {"username": "bob@bob.com"}}
             )
 
         return self.api.test("/v1/requiresAuth", params={}, headers={

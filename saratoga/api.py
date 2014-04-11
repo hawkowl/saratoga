@@ -19,6 +19,8 @@ from base64 import b64decode
 
 import json
 
+from jsonschema import validate
+
 
 
 class DefaultServiceClass(object):
@@ -38,11 +40,18 @@ class SaratogaResource(Resource):
 
         def _write(result, request, api, processor):
 
-            res = _verifyResponseParams(result, processor)
+            schema = processor.get("responseSchema", None)
+
+            if schema:
+                try:
+                    validate(result, schema)
+                except Exception, e:
+                    e.errorcode = 500
+                    raise e
 
             response = {
                 "status": "success",
-                "data": res
+                "data": result
             }
 
             finishedResult = json.dumps(response)
@@ -92,26 +101,23 @@ class SaratogaResource(Resource):
             # Get some parameters. #
             ########################
 
-            paramsType = processor.get("paramsType", "jsonbody")
+            requestContent = request.content.read() or "{}"
 
-            if paramsType == "url":
-                args = request.args
-                params = {}
-                for key, data in args.iteritems():
-                    params[key] = data
-                params = _getParams(params, processor)
-            elif paramsType == "jsonbody":
-                requestContent = request.content.read() or {}
-                params = _getParams(json.loads(requestContent), processor)
-            else:
-                raise APIError(
-                    "{} is not a valid parameter type.".format(paramsType))
+            userParams = {"params": json.loads(requestContent)}
 
-            if "saratoga_user" in params:
-                raise BadRequestParams("Forbidden keyword.")
+            schema = processor.get("requestSchema", None)
+
+            if schema:
+                try:
+                    validate(userParams("params"), schema)
+                except Exception, e:
+                    e.errorcode = 400
+                    raise e
 
             if extraParams:
-                params = dict(params.items() + extraParams.items())
+                params = dict(userParams.items() + extraParams.items())
+            else:
+                params = userParams
 
             d = maybeDeferred(func, self.api.serviceClass, request, params)
 
@@ -153,7 +159,7 @@ class SaratogaResource(Resource):
 
                 def _authAdditional(canonicalUsername):
 
-                    return {"saratoga_user": canonicalUsername}
+                    return {"auth": {"username": canonicalUsername}}
 
                 auth = request.getHeader("Authorization")
 
