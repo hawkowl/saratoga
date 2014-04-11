@@ -188,7 +188,8 @@ class SaratogaResource(Resource):
                     d.addCallback(lambda _:
                         self.api.serviceClass.auth.auth_usernameAndPassword(
                             authUser, authPassword))
-                elif authType.startswith("hmac-"):
+
+                if authType.startswith("hmac-"):
                     algoType = authType.split("-")[1]
 
                     if algoType in self.api.APIMetadata.get(

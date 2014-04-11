@@ -71,12 +71,26 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "fail", "data": "Unsupported Authorization type "
-                "'OMGLOLAUTH'"}
+                {"status": "fail", "data": "Malformed Authorization header."}
             )
 
         return self.api.test("/v1/requiresAuth", headers={
             "Authorization": ["BASIC HITHERE"]
+            }).addCallback(rendered)
+
+
+    def test_weirdAuthorizationHeader(self):
+        """
+        Test that weird auth headers are handled gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Malformed Authorization header."}
+            )
+
+        return self.api.test("/v1/requiresAuth", headers={
+            "Authorization": ["BASIC {}".format(b64("bob:pass:word"))]
             }).addCallback(rendered)
 
 
