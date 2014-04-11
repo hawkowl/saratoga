@@ -101,10 +101,8 @@ class SaratogaResource(Resource):
                     params[key] = data
                 params = _getParams(params, processor)
             elif paramsType == "jsonbody":
-                requestContent = request.content.read()
-                requestContent = requestContent or {}
-                params = json.loads(requestContent)
-                params = _getParams(params, processor)
+                requestContent = request.content.read() or {}
+                params = _getParams(json.loads(requestContent), processor)
             else:
                 raise APIError(
                     "{} is not a valid parameter type.".format(paramsType))
