@@ -113,13 +113,13 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
 
 
 def _testItem(resource, path, params=None, method="GET", useBody=True,
-              headers=None):
+              headers=None, replaceEmptyWithEmptyDict=True):
 
     def _cb(result, request):
         return request
 
     if useBody:
-        if not params:
+        if replaceEmptyWithEmptyDict and not params:
             params = {}
         req = requestMock(path, body=json.dumps(params), method=method,
                 headers=headers)

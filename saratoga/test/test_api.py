@@ -198,6 +198,19 @@ class SaratogaAPITests(TestCase):
 
         return self.api.test("/v1/example").addCallback(rendered)
 
+    def test_basicWithEmptyParams(self):
+        """
+        Basic Saratoga test.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {}}
+            )
+
+        return self.api.test("/v1/example", replaceEmptyWithEmptyDict=True
+            ).addCallback(rendered)
+
     def test_handlingOfExceptions(self):
         """
         Test that throwing a generic exception is handled gracefully.

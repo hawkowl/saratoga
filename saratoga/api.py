@@ -284,10 +284,12 @@ class SaratogaAPI(object):
         return self.resource
 
 
-    def test(self, path, params=None, headers=None, method="GET", useBody=True):
+    def test(self, path, params=None, headers=None, method="GET", useBody=True,
+             replaceEmptyWithEmptyDict=False):
 
         return testItem(self.resource, path, params=params, headers=headers,
-            method=method, useBody=useBody)
+            method=method, useBody=useBody,
+            replaceEmptyWithEmptyDict=replaceEmptyWithEmptyDict)
 
     def run(self, port=8080): # pragma: no cover
 
