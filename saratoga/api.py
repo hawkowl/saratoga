@@ -102,10 +102,8 @@ class SaratogaResource(Resource):
                 params = _getParams(params, processor)
             elif paramsType == "jsonbody":
                 requestContent = request.content.read()
-                if requestContent:
-                    params = json.loads(requestContent)
-                else:
-                    params = {}
+                requestContent = requestContent or {}
+                params = json.loads(requestContent)
                 params = _getParams(params, processor)
             else:
                 raise APIError(
@@ -195,9 +193,12 @@ class SaratogaResource(Resource):
                     if algoType in self.api.APIMetadata.get(
                         "AllowedHMACTypes", ["sha256", "sha512"]):
 
+                        content = request.content.read()
+                        request.content.seek(0)
+
                         d.addCallback(lambda _:
                             self.api.serviceClass.auth.auth_HMAC(authUser,
-                                authPassword, request.content.read(), algoType))
+                                authPassword, content, algoType))
                     else:
                         fail = AuthenticationFailed(
                             "Unsupported HMAC type '{}'".format(

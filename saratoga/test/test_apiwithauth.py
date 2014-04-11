@@ -148,9 +148,8 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
                 {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
             )
 
-        return self.api.test("/v1/requiresAuth", {}, headers={
-            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
-                "3a28b"))]
+        return self.api.test("/v1/requiresAuth", params={}, headers={
+            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:2c3df4dc5c5fd4d1c21b117d3b07c7a330e89ddf1b30e23ff0e7171e6394a2cc"))]
             }).addCallback(rendered)
 
 
@@ -164,7 +163,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
                 {"status": "fail", "data": "Authentication failed."}
             )
 
-        return self.api.test("/v1/requiresAuth", {"hi": "there"}, headers={
+        return self.api.test("/v1/requiresAuth", params={"hi": "there"}, headers={
             "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
                 "3a28b"))]
             }).addCallback(rendered)

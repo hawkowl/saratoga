@@ -118,15 +118,14 @@ def _testItem(resource, path, params=None, method="GET", useBody=True,
     def _cb(result, request):
         return request
 
-    if params:
-        if useBody:
-            req = requestMock(path, body=json.dumps(params), method=method,
-                headers=headers)
-        else:
-            req = requestMock(path, args=params, method=method,
+    if useBody:
+        if not params:
+            params = {}
+        req = requestMock(path, body=json.dumps(params), method=method,
                 headers=headers)
     else:
-        req = requestMock(path, method=method, headers=headers)
+        req = requestMock(path, args=params, method=method,
+            headers=headers)
 
     d = _render(resource, req)
     d.addCallback(_cb, req)

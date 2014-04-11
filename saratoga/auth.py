@@ -68,8 +68,7 @@ class DefaultAuthenticator(object):
 
             algo = getattr(hashlib, algorithm)
 
-            hmacObj = hmac.new(result.get("password"), digestmod=algo)
-            hmacObj.update(content)
+            hmacObj = hmac.new(result.get("password"), content, algo)
 
             hmacResult = hmacObj.hexdigest()
 
