@@ -4,7 +4,6 @@ from twisted.python.failure import Failure
 from twisted.web.resource import Resource
 import twisted
 
-from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga.test.requestMock import _testItem as testItem
 from saratoga import (
     BadRequestParams,
