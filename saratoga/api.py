@@ -15,6 +15,8 @@ from saratoga import (
     __gitversion__
 )
 
+from base64 import b64decode
+
 import json
 
 
@@ -165,16 +167,37 @@ class SaratogaResource(Resource):
 
                 
                 authType, authDetails = auth.split()
+                authType = authType.lower()
+
+                if not authType in ["basic", "hmac"]:
+                    fail = AuthenticationFailed(
+                        "Unsupported Authorization type '{}'".format(
+                            authType.upper()))
+                    return _quickfail(fail)
+
+                try:
+                    authDetails = b64decode(authDetails)
+                except Exception, e:
+                    fail = AuthenticationFailed(
+                        "Malformed Authorization header.")
+                    return _quickfail(fail)
                 
-                if authType.lower() == "basic":
+
+                authUser, authPassword = authDetails.split(":")
+                
+                if authType == "basic":
                     d.addCallback(lambda _:
                         self.api.serviceClass.auth.auth_usernameAndPassword(
-                            request.getUser(), request.getPassword()))
+                            authUser, authPassword))
+                elif authType.startswith("hmac-"):
+                    algoType = authType.split("-")
 
-                else:
-                    fail = AuthenticationFailed(
-                        "Unsupported Authorization type '{}'".format(authType))
-                    return _quickfail(fail)
+                    if algoType in self.api.APIMetadata.get("AllowedHMACTypes"):
+
+                        d.addCallback(lambda _:
+                            self.api.serviceClass.auth.auth_HMAC(authUser,
+                                authPassword, request.content.read(), algoType))
+                    
 
                 d.addCallback(_authAdditional)
 
