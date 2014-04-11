@@ -64,9 +64,25 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
             }).addCallback(rendered)
 
 
+    def test_malformedAuthHeader(self):
+        """
+        Test that something that a malformed auth header is handled gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Unsupported Authorization type "
+                "'OMGLOLAUTH'"}
+            )
+
+        return self.api.test("/v1/requiresAuth", headers={
+            "Authorization": ["BASIC HITHERE"]
+            }).addCallback(rendered)
+
+
     def test_unsupportedAuthType(self):
         """
-        Test that something that Saratoga doesn't support is handled gracefully.
+        Test that a malformed auth header is handled gracefully.
         """
         def rendered(request):
             self.assertEqual(

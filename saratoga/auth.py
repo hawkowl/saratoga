@@ -79,6 +79,4 @@ class DefaultAuthenticator(object):
 
             raise AuthenticationFailed("Authentication failed.")
 
-        return self._getUserDetails(username).addCallback(_continue)
-
-
+        return self._getUserDetails(username).addCallback(_continue)    

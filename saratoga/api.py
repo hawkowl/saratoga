@@ -178,13 +178,11 @@ class SaratogaResource(Resource):
 
                 try:
                     authDetails = b64decode(authDetails)
+                    authUser, authPassword = authDetails.split(":")
                 except Exception, e:
                     fail = AuthenticationFailed(
                         "Malformed Authorization header.")
                     return _quickfail(fail)
-                
-
-                authUser, authPassword = authDetails.split(":")
                 
                 if authType == "basic":
                     d.addCallback(lambda _:
