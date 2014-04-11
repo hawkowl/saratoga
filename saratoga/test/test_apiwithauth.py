@@ -106,3 +106,34 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
         return self.api.test("/v1/requiresAuth", headers={
             "Authorization": ["BASIC {}".format(b64("bob:pass"))]
             }).addCallback(rendered)
+
+
+    def test_correctHMACAuth(self):
+        """
+        Test that HMAC authentication works.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
+            )
+
+        return self.api.test("/v1/requiresAuth", {}, headers={
+            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:pass"))]
+            }).addCallback(rendered)
+
+
+    def test_unsupportedHMACAuth(self):
+        """
+        Test that trying to use an unsupported HMAC type is handled gracefully.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Unsupported HMAC type "
+                "'MD5'"}
+            )
+
+        return self.api.test("/v1/requiresAuth", {}, headers={
+            "Authorization": ["HMAC-MD5 {}".format(b64("bob:pass"))]
+            }).addCallback(rendered)

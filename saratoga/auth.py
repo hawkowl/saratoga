@@ -1,6 +1,9 @@
 from saratoga import AuthenticationFailed
 from twisted.internet import defer
 
+import hashlib
+import hmac
+
 
 
 class InMemoryStringSharedSecretSource(object):
@@ -56,12 +59,26 @@ class DefaultAuthenticator(object):
 
             raise AuthenticationFailed("Authentication failed.")
 
-        d = self._getUserDetails(username)
-        d.addCallback(_continue)
-        return d
+        return self._getUserDetails(username).addCallback(_continue)
 
-    def auth_HMAC(self, username, hmac, content, algorithm):
 
-        pass
+    def auth_HMAC(self, username, hmacUser, content, algorithm):
+
+        def _continue(result):
+
+            algo = getattr(hashlib, algorithm)
+
+            hmacObj = hmac.new(result.get("password"), digestmod=algo)
+            hmacObj.update(content)
+
+            hmacResult = hmacObj.hexdigest()
+
+            if hmacUser == hmacResult:
+                uName = result.get("canonicalUsername", result.get("Username"))
+                return defer.succeed(uName)
+
+            raise AuthenticationFailed("Authentication failed.")
+
+        return self._getUserDetails(username).addCallback(_continue)
 
 

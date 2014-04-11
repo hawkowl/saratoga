@@ -46,3 +46,29 @@ class AuthTests(unittest.TestCase):
                 "peter", "pass")).addErrback(_catch)
 
         return authDeferred
+
+
+    def test_inMemoryStringSharedSecretSourcePassword(self):
+
+        def _catch(res):
+            self.assertIsInstance(res.value, AuthenticationFailed)
+
+        users = [
+            {
+                "username": "bob",
+                "password": "42"
+            },
+            {
+                "username": "alice",
+                "canonicalUsername": "alice@houseofcar.ds",
+                "password": "wonderland"
+            }
+        ]
+
+        authenticator = auth.DefaultAuthenticator(
+            auth.InMemoryStringSharedSecretSource(users))
+
+        authDeferred = authenticator.auth_HMAC("bob", "a878291f4cd5efdc03cdcc2e208b0174c29176624660e0338d6c7b88c3b05bcb", "hi", "sha256")
+
+        return authDeferred
+

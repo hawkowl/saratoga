@@ -169,11 +169,12 @@ class SaratogaResource(Resource):
                 authType, authDetails = auth.split()
                 authType = authType.lower()
 
-                if not authType in ["basic", "hmac"]:
-                    fail = AuthenticationFailed(
-                        "Unsupported Authorization type '{}'".format(
-                            authType.upper()))
-                    return _quickfail(fail)
+                if not authType in ["basic"]:
+                    if not authType.startswith("hmac-"):   
+                        fail = AuthenticationFailed(
+                            "Unsupported Authorization type '{}'".format(
+                                authType.upper()))
+                        return _quickfail(fail)
 
                 try:
                     authDetails = b64decode(authDetails)
@@ -190,13 +191,19 @@ class SaratogaResource(Resource):
                         self.api.serviceClass.auth.auth_usernameAndPassword(
                             authUser, authPassword))
                 elif authType.startswith("hmac-"):
-                    algoType = authType.split("-")
+                    algoType = authType.split("-")[1]
 
-                    if algoType in self.api.APIMetadata.get("AllowedHMACTypes"):
+                    if algoType in self.api.APIMetadata.get(
+                        "AllowedHMACTypes", ["sha256", "sha512"]):
 
                         d.addCallback(lambda _:
                             self.api.serviceClass.auth.auth_HMAC(authUser,
                                 authPassword, request.content.read(), algoType))
+                    else:
+                        fail = AuthenticationFailed(
+                            "Unsupported HMAC type '{}'".format(
+                                algoType.upper()))
+                        return _quickfail(fail)
                     
 
                 d.addCallback(_authAdditional)
