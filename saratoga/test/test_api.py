@@ -21,8 +21,6 @@ class APIImpl(object):
             self.requestParams_GET = self.example_GET
             self.responseParams_GET = self.example_GET
             self.dictResponse_GET = self.listResponse_GET
-            self.listofdictResponse_GET = self.listResponse_GET
-            self.paramOptions_GET = self.example_GET
             self.requiresAuth_GET = self.example_GET
             self.invalidParamsType_GET = self.example_GET
             self.invalidResponseFormat_GET = self.example_GET
@@ -54,26 +52,28 @@ APIDef = {
             "endpoint": "responseParams",
             "getProcessors": [{
                 "versions": [1],
-                "requiredResponseParams": ["cake", "muffin"],
-                "optionalResponseParams": ["pizza"]
+                "responseSchema": {
+                    "properties": {
+                        "cake": {},
+                        "muffin": {},
+                        "pizza": {}
+                    },
+                    "required": ["cake", "muffin"],
+                    "additionalProperties": False
+                }
             }]
         },
         {
             "endpoint": "listResponse",
-            "getProcessors": [{"versions": [1], "responseFormat": "list"}]
-        },
-        {
-            "endpoint": "listofdictResponse",
-            "getProcessors": [{"versions": [1], "responseFormat": "listofdict"}]
+            "getProcessors": [{"versions": [1], "responseSchema": {
+                "type": "array"
+            }}]
         },
         {
             "endpoint": "dictResponse",
-            "getProcessors": [{"versions": [1], "responseFormat": "dict"}]
-        },
-        {
-            "endpoint": "paramOptions",
-            "getProcessors": [{"versions": [1], "requiredParams": [
-            {"param": "foo", "paramOptions": ["bar", {"data": "baz"}]}]}]
+            "getProcessors": [{"versions": [1], "responseSchema": {
+                "type": "object"
+            }}]
         },
         {
             "endpoint": "requiresAuth",
@@ -242,71 +242,6 @@ class SaratogaAPITests(TestCase):
         return self.api.test("/v1/requiresAuth").addCallback(rendered)
 
 
-    def test_paramOptions(self):
-        """
-        Test that param options work.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"foo": "bar"}}
-            )
-
-        return self.api.test("/v1/paramOptions", params={"foo": "bar"}
-            ).addCallback(rendered)
-
-
-    def test_paramOptionsFailure(self):
-        """
-        Test that it handles paramOptions failing gracefully.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "fail",
-                "data": "'cake' isn't part of [\"bar\", \"baz\"] in foo"}
-            )
-
-        return self.api.test("/v1/paramOptions", params={"foo": "cake"}
-            ).addCallback(rendered)
-
-
-    def test_invalidParamsType(self):
-        """
-        Test that it handles an incorrect paramsType gracefully.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "error",
-                "data": "Internal server error."}
-            )
-            warnings = self.flushLoggedErrors()
-            self.assertEqual(warnings[0].getErrorMessage(),
-                "bar is not a valid parameter type.")
-
-        d = self.api.test("/v1/invalidParamsType")
-        return d.addCallback(rendered)
-
-
-    def test_invalidResponseFormat(self):
-        """
-        Test that it handles an incorrect responseFormat gracefully.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "error",
-                "data": "Internal server error."}
-            )
-            warnings = self.flushLoggedErrors()
-            self.assertEqual(warnings[0].getErrorMessage(),
-                "bar is not a valid response format.")
-
-        d = self.api.test("/v1/invalidResponseFormat")
-        return d.addCallback(rendered)
-
-
     def test_dictResponse(self):
         """
         Test that it allows a dict response.
@@ -335,20 +270,6 @@ class SaratogaAPITests(TestCase):
             params={"data": ["hi", "there"]}).addCallback(rendered)
 
 
-    def test_listofdictResponse(self):
-        """
-        Test that it allows a list of dict response.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "success", "data": [{"hi": "there"}]}
-            )
-
-        return self.api.test("/v1/listofdictResponse",
-            params={"data": [{"hi": "there"}]}).addCallback(rendered)
-
-
     def test_dictResponseFailure(self):
         """
         Test that it handles responding with a non-dict gracefully when it is
@@ -362,7 +283,7 @@ class SaratogaAPITests(TestCase):
             )
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(),
-                "Result is not a dict.")
+                "[u'hi', u'there'] is not of type 'object'")
 
         d = self.api.test("/v1/dictResponse",
             params={"data": ["hi", "there"]})
@@ -382,7 +303,7 @@ class SaratogaAPITests(TestCase):
             )
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(),
-                "Result is not a list.")
+                "{u'hi': u'there'} is not of type 'array'")
 
         d = self.api.test("/v1/listResponse",
             params={"data": {"hi": "there"}})
@@ -436,26 +357,6 @@ class SaratogaAPITests(TestCase):
         return d.addCallback(rendered)
 
 
-    def test_requiredResponseParamsReturnsErrorIfGivenExtra(self):
-        """
-        Test that required response params work, and will return an error if
-        given extras.
-        """
-        def rendered(request):
-            self.assertEqual(
-                json.loads(request.getWrittenData()),
-                {"status": "error",
-                "data": "Internal server error."}
-            )
-            warnings = self.flushLoggedErrors()
-            self.assertEqual(warnings[0].getErrorMessage(),
-                "Unexpected response parameters: 'foo'")
-
-        d = self.api.test("/v1/responseParams",
-            params={"cake": "yes", "muffin": "yes", "foo": "bar"})
-        return d.addCallback(rendered)
-
-
     def test_requiredResponseParamsReturnsErrorIfNotGiven(self):
         """
         Test that required response params work, and will return an error if
@@ -469,7 +370,7 @@ class SaratogaAPITests(TestCase):
             )
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(),
-                "Missing response parameters: 'cake', 'muffin'")
+                "'cake' is a required property")
 
         return self.api.test("/v1/responseParams").addCallback(rendered)
 
@@ -482,7 +383,7 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
                 {"status": "fail",
-                "data": "Missing request parameters: 'goodbye', 'hello'"}
+                "data": "'hello' is a required property"}
             )
 
         d = self.api.test("/v1/requestParams")
@@ -498,7 +399,8 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
                 {"status": "fail",
-                "data": "Unexpected request parameters: 'unspecified'"}
+                "data": "Additional properties are not allowed (u'unspecified'"
+                    " was unexpected)"}
             )
 
         d = self.api.test("/v1/requestParams", params={

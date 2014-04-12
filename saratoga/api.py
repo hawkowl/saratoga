@@ -40,18 +40,16 @@ class SaratogaResource(Resource):
 
         def _write(result, request, api, processor):
 
+            if not result:
+                result = {}
+
             schema = processor.get("responseSchema", None)
 
             if schema:
                 try:
-                    print "aaa"
                     validate(result, schema)
-                    print "aaa"
                 except Exception, e:
-                    raise BadResponseParams(e)
-
-            if not result:
-                result = {}
+                    raise BadResponseParams(e.message)
 
             response = {
                 "status": "success",
@@ -111,7 +109,6 @@ class SaratogaResource(Resource):
             return d
 
         def _quickfail(fail):
-
             return _error(Failure(fail), request, None, None)
 
 
@@ -125,17 +122,19 @@ class SaratogaResource(Resource):
         if processor:
 
             requestContent = request.content.read()
+            
+            params = json.loads(requestContent)
 
-            if requestContent:
-                userParams = {"params": json.loads(requestContent)}
-            else:
-                userParams = {"params": {}}
+            if not params:
+                params = {}
+
+            userParams = {"params": params}
 
             schema = processor.get("requestSchema", None)
 
             if schema:
                 try:
-                    validate(userParams["params"], schema)
+                    validate(params, schema)
                 except Exception, e:
                     err = BadRequestParams(e.message)
                     return _quickfail(err)
