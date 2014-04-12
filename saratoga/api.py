@@ -95,16 +95,13 @@ class SaratogaResource(Resource):
             return 1
 
 
-        def _runAPICall(extraParams, userParams, res):
+        def _runAPICall(authParams, userParams, res):
 
             api, version, processor = res
 
-            if extraParams:
-                params = dict(userParams.items() + extraParams.items())
-            else:
-                params = userParams
+            userParams["auth"] = authParams
 
-            d = maybeDeferred(func, self.api.serviceClass, request, params)
+            d = maybeDeferred(func, self.api.serviceClass, request, userParams)
 
             return d
 
@@ -161,7 +158,7 @@ class SaratogaResource(Resource):
 
                 def _authAdditional(canonicalUsername):
 
-                    return {"auth": {"username": canonicalUsername}}
+                    return {"username": canonicalUsername}
 
                 auth = request.getHeader("Authorization")
 
@@ -216,7 +213,7 @@ class SaratogaResource(Resource):
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
 
-            d.callback(False)
+            d.callback(None)
 
         else:
             fail = DoesNotExist("Endpoint does not exist.")
