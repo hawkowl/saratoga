@@ -164,7 +164,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
             )
 
         return self.api.test("/v1/requiresAuth", params={"hi": "there"}, headers={
-            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
+            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca5818de33668365432b7aca808ce02"
                 "3a28b"))]
             }).addCallback(rendered)
 

@@ -43,9 +43,10 @@ APIDef = {
                     "properties": {
                         "hello": {},
                         "goodbye": {}
-                    }
+                    },
+                    "additionalProperties": False,
+                    "required": ["hello", "goodbye"]
                 },
-                "optionalParams": ["the"]
             }]
         },
         {

@@ -64,6 +64,9 @@ class DefaultAuthenticator(object):
 
     def auth_HMAC(self, username, hmacUser, content, algorithm):
 
+        print content
+        print hmacUser
+
         def _continue(result):
 
             algo = getattr(hashlib, algorithm)

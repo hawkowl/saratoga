@@ -44,7 +44,9 @@ class SaratogaResource(Resource):
 
             if schema:
                 try:
+                    print "aaa"
                     validate(result, schema)
+                    print "aaa"
                 except Exception, e:
                     raise BadResponseParams(e)
 
@@ -92,25 +94,9 @@ class SaratogaResource(Resource):
             return 1
 
 
-        def _runAPICall(extraParams, res):
+        def _runAPICall(extraParams, userParams, res):
 
             api, version, processor = res
-
-            ########################
-            # Get some parameters. #
-            ########################
-
-            requestContent = request.content.read() or "{}"
-
-            userParams = {"params": json.loads(requestContent)}
-
-            schema = processor.get("requestSchema", None)
-
-            if schema:
-                try:
-                    validate(userParams["params"], schema)
-                except Exception, e:
-                    raise BadRequestParams(e)
 
             if extraParams:
                 params = dict(userParams.items() + extraParams.items())
@@ -134,6 +120,20 @@ class SaratogaResource(Resource):
             request.path, (None, None, None))
 
         if processor:
+
+            requestContent = request.content.read()
+
+            userParams = {"params": json.loads(requestContent or "{}")}
+
+            schema = processor.get("requestSchema", None)
+
+            if schema:
+                print "aaa"
+                try:
+                    validate(userParams["params"], schema)
+                except Exception, e:
+                    err = BadRequestParams(e.message)
+                    return _quickfail(err)
 
             versionClass = getattr(
                 self.api.implementation, "v{}".format(version))
@@ -195,12 +195,10 @@ class SaratogaResource(Resource):
                     if algoType in self.api.APIMetadata.get(
                         "AllowedHMACTypes", ["sha256", "sha512"]):
 
-                        content = request.content.read()
-                        request.content.seek(0)
 
                         d.addCallback(lambda _:
                             self.api.serviceClass.auth.auth_HMAC(authUser,
-                                authPassword, content, algoType))
+                                authPassword, requestContent, algoType))
                     else:
                         fail = AuthenticationFailed(
                             "Unsupported HMAC type '{}'".format(
@@ -210,7 +208,7 @@ class SaratogaResource(Resource):
 
                 d.addCallback(_authAdditional)
 
-            d.addCallback(_runAPICall, (api, version, processor))
+            d.addCallback(_runAPICall, userParams, (api, version, processor))
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
 
