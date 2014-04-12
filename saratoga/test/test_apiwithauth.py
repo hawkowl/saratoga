@@ -10,7 +10,7 @@ from base64 import b64encode as b64
 class APIImpl(object):
     class v1(object):
         def requiresAuth_GET(self, request, params):
-            return params
+            return params["auth"]
 
 
 APIDef = {
@@ -130,7 +130,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
+                {"status": "success", "data": {"username": "bob@bob.com"}}
             )
 
         return self.api.test("/v1/requiresAuth", headers={
@@ -145,7 +145,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
         def rendered(request):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
-                {"status": "success", "data": {"saratoga_user": "bob@bob.com"}}
+                {"status": "success", "data": {"username": "bob@bob.com"}}
             )
 
         return self.api.test("/v1/requiresAuth", params={}, headers={
@@ -164,7 +164,7 @@ class SaratogaAPITestsWithAuthenticator(TestCase):
             )
 
         return self.api.test("/v1/requiresAuth", params={"hi": "there"}, headers={
-            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca6818de33668365432b7aca808ce02"
+            "Authorization": ["HMAC-SHA256 {}".format(b64("bob:7785867505a1295459e71c53ab94ca5818de33668365432b7aca808ce02"
                 "3a28b"))]
             }).addCallback(rendered)
 

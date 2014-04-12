@@ -4,10 +4,10 @@ from twisted.python.failure import Failure
 from twisted.web.resource import Resource
 import twisted
 
-from saratoga.tools import _verifyResponseParams, _getParams
 from saratoga.test.requestMock import _testItem as testItem
 from saratoga import (
     BadRequestParams,
+    BadResponseParams,
     AuthenticationFailed,
     AuthenticationRequired,
     DoesNotExist,
@@ -18,6 +18,8 @@ from saratoga import (
 from base64 import b64decode
 
 import json
+
+from jsonschema import validate
 
 
 
@@ -38,11 +40,20 @@ class SaratogaResource(Resource):
 
         def _write(result, request, api, processor):
 
-            res = _verifyResponseParams(result, processor)
+            if not result:
+                result = {}
+
+            schema = processor.get("responseSchema", None)
+
+            if schema:
+                try:
+                    validate(result, schema)
+                except Exception, e:
+                    raise BadResponseParams(e.message)
 
             response = {
                 "status": "success",
-                "data": res
+                "data": result
             }
 
             finishedResult = json.dumps(response)
@@ -84,41 +95,17 @@ class SaratogaResource(Resource):
             return 1
 
 
-        def _runAPICall(extraParams, res):
+        def _runAPICall(authParams, userParams, res):
 
             api, version, processor = res
 
-            ########################
-            # Get some parameters. #
-            ########################
+            userParams["auth"] = authParams
 
-            paramsType = processor.get("paramsType", "jsonbody")
-
-            if paramsType == "url":
-                args = request.args
-                params = {}
-                for key, data in args.iteritems():
-                    params[key] = data
-                params = _getParams(params, processor)
-            elif paramsType == "jsonbody":
-                requestContent = request.content.read() or {}
-                params = _getParams(json.loads(requestContent), processor)
-            else:
-                raise APIError(
-                    "{} is not a valid parameter type.".format(paramsType))
-
-            if "saratoga_user" in params:
-                raise BadRequestParams("Forbidden keyword.")
-
-            if extraParams:
-                params = dict(params.items() + extraParams.items())
-
-            d = maybeDeferred(func, self.api.serviceClass, request, params)
+            d = maybeDeferred(func, self.api.serviceClass, request, userParams)
 
             return d
 
         def _quickfail(fail):
-
             return _error(Failure(fail), request, None, None)
 
 
@@ -130,6 +117,24 @@ class SaratogaResource(Resource):
             request.path, (None, None, None))
 
         if processor:
+
+            requestContent = request.content.read()
+            
+            params = json.loads(requestContent)
+
+            if not params:
+                params = {}
+
+            userParams = {"params": params}
+
+            schema = processor.get("requestSchema", None)
+
+            if schema:
+                try:
+                    validate(params, schema)
+                except Exception, e:
+                    err = BadRequestParams(e.message)
+                    return _quickfail(err)
 
             versionClass = getattr(
                 self.api.implementation, "v{}".format(version))
@@ -153,7 +158,7 @@ class SaratogaResource(Resource):
 
                 def _authAdditional(canonicalUsername):
 
-                    return {"saratoga_user": canonicalUsername}
+                    return {"username": canonicalUsername}
 
                 auth = request.getHeader("Authorization")
 
@@ -191,12 +196,10 @@ class SaratogaResource(Resource):
                     if algoType in self.api.APIMetadata.get(
                         "AllowedHMACTypes", ["sha256", "sha512"]):
 
-                        content = request.content.read()
-                        request.content.seek(0)
 
                         d.addCallback(lambda _:
                             self.api.serviceClass.auth.auth_HMAC(authUser,
-                                authPassword, content, algoType))
+                                authPassword, requestContent, algoType))
                     else:
                         fail = AuthenticationFailed(
                             "Unsupported HMAC type '{}'".format(
@@ -206,11 +209,11 @@ class SaratogaResource(Resource):
 
                 d.addCallback(_authAdditional)
 
-            d.addCallback(_runAPICall, (api, version, processor))
+            d.addCallback(_runAPICall, userParams, (api, version, processor))
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
 
-            d.callback(False)
+            d.callback(None)
 
         else:
             fail = DoesNotExist("Endpoint does not exist.")
