@@ -50,6 +50,9 @@ class SaratogaResource(Resource):
                 except Exception, e:
                     raise BadResponseParams(e)
 
+            if not result:
+                result = {}
+
             response = {
                 "status": "success",
                 "data": result
@@ -123,12 +126,14 @@ class SaratogaResource(Resource):
 
             requestContent = request.content.read()
 
-            userParams = {"params": json.loads(requestContent or "{}")}
+            if requestContent:
+                userParams = {"params": json.loads(requestContent)}
+            else:
+                userParams = {"params": {}}
 
             schema = processor.get("requestSchema", None)
 
             if schema:
-                print "aaa"
                 try:
                     validate(userParams["params"], schema)
                 except Exception, e:

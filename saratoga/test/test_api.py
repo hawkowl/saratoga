@@ -42,7 +42,8 @@ APIDef = {
                 "requestSchema": {
                     "properties": {
                         "hello": {},
-                        "goodbye": {}
+                        "goodbye": {},
+                        "the": {}
                     },
                     "additionalProperties": False,
                     "required": ["hello", "goodbye"]
