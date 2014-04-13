@@ -16,10 +16,9 @@ from saratoga import (
 )
 
 from base64 import b64decode
+from jsonschema import Draft4Validator
 
 import json
-
-from jsonschema import Draft4Validator, validate
 
 
 
