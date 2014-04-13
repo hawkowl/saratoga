@@ -369,8 +369,8 @@ class SaratogaAPITests(TestCase):
                 "data": "Internal server error."}
             )
             warnings = self.flushLoggedErrors()
-            self.assertEqual(warnings[0].getErrorMessage(),
-                "'cake' is a required property")
+            self.assertEqual(warnings[0].getErrorMessage(), "'cake' is a "
+                "required property, 'muffin' is a required property")
 
         return self.api.test("/v1/responseParams").addCallback(rendered)
 
@@ -383,7 +383,8 @@ class SaratogaAPITests(TestCase):
             self.assertEqual(
                 json.loads(request.getWrittenData()),
                 {"status": "fail",
-                "data": "'hello' is a required property"}
+                "data": "'hello' is a required property, 'goodbye' is a "
+                    "required property"}
             )
 
         d = self.api.test("/v1/requestParams")

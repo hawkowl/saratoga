@@ -19,7 +19,7 @@ from base64 import b64decode
 
 import json
 
-from jsonschema import validate
+from jsonschema import Draft4Validator, validate
 
 
 
@@ -46,10 +46,12 @@ class SaratogaResource(Resource):
             schema = processor.get("responseSchema", None)
 
             if schema:
-                try:
-                    validate(result, schema)
-                except Exception, e:
-                    raise BadResponseParams(e.message)
+                v = Draft4Validator(schema)
+                errors = sorted(v.iter_errors(result), key=lambda e: e.path)
+                
+                if errors:
+                    raise BadResponseParams(
+                        ", ".join(e.message for e in errors))
 
             response = {
                 "status": "success",
@@ -130,11 +132,12 @@ class SaratogaResource(Resource):
             schema = processor.get("requestSchema", None)
 
             if schema:
-                try:
-                    validate(params, schema)
-                except Exception, e:
-                    err = BadRequestParams(e.message)
-                    return _quickfail(err)
+                v = Draft4Validator(schema)
+                errors = sorted(v.iter_errors(params), key=lambda e: e.path)
+                
+                if errors:
+                    return _quickfail(BadRequestParams(", ".join(
+                        e.message for e in errors)))
 
             versionClass = getattr(
                 self.api.implementation, "v{}".format(version))
