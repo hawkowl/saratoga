@@ -19,6 +19,7 @@ from base64 import b64decode
 from jsonschema import Draft4Validator
 
 import json
+import re
 
 
 
@@ -96,13 +97,12 @@ class SaratogaResource(Resource):
             return 1
 
 
-        def _runAPICall(authParams, userParams, res):
+        def _runAPICall(authParams, args, userParams, res):
 
             api, version, processor = res
-
             userParams["auth"] = authParams
 
-            d = maybeDeferred(func, self.api.serviceClass, request, userParams)
+            d = maybeDeferred(func, self.api.serviceClass, request, userParams, *args)
 
             return d
 
@@ -116,11 +116,20 @@ class SaratogaResource(Resource):
 
         api, version, processor = self.api.endpoints[request.method].get(
             request.path, (None, None, None))
+        args = {}
+
+        if not processor:
+            for item in self.api.endpoints[request.method]:
+                a = re.compile("^" + item + "$")
+                match = a.match(request.path)
+                if match:
+                    api, version, processor = self.api.endpoints[request.method][item]
+                    args = match.groups()
+
+                    break
 
         if processor:
-
             requestContent = request.content.read()
-            
             params = json.loads(requestContent)
 
             if not params:
@@ -138,10 +147,11 @@ class SaratogaResource(Resource):
                     return _quickfail(BadRequestParams(", ".join(
                         e.message for e in errors)))
 
+            funcname = api.get("func") or api["endpoint"]
             versionClass = getattr(
                 self.api.implementation, "v{}".format(version))
             func = getattr(versionClass, "{}_{}".format(
-                api["endpoint"], request.method)).im_func
+                funcname, request.method)).im_func
 
             d = Deferred()
 
@@ -211,7 +221,7 @@ class SaratogaResource(Resource):
 
                 d.addCallback(_authAdditional)
 
-            d.addCallback(_runAPICall, userParams, (api, version, processor))
+            d.addCallback(_runAPICall, args, userParams, (api, version, processor))
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
 
@@ -274,11 +284,12 @@ class SaratogaAPI(object):
 
                         versionClass = getattr(
                             self.implementation, "v{}".format(version))
+                        funcName = api.get("func") or api["endpoint"]
                         if not hasattr(versionClass,
-                            "{}_{}".format(api["endpoint"], verb)):
+                            "{}_{}".format(funcName, verb)):
                             raise Exception("Implementation is missing the {} " 
                                 "processor in the v{} {} endpoint".format(
-                                    verb, version, api["endpoint"]))
+                                    verb, version, funcName))
 
                         path = "/v{}/{}".format(version, api["endpoint"])
                         self.endpoints[verb][path] = (api, version, processor)

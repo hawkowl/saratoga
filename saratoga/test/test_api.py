@@ -15,6 +15,9 @@ class APIImpl(object):
         def exception_GET(self, request, params):
             raise Exception("OMG LOL WTF")
 
+        def exampleregex_GET(self, request, params, someID):
+            return {"id": someID}
+
         def __init__(self):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
@@ -31,6 +34,11 @@ APIDef = {
     "endpoints": [
         {
             "endpoint": "example",
+            "getProcessors": [{"versions": [1]}]
+        },
+        {
+            "func": "exampleregex",
+            "endpoint": r"example/(\d+)",
             "getProcessors": [{"versions": [1]}]
         },
         {
@@ -184,7 +192,6 @@ class SaratogaAPITests(TestCase):
         """
         self.assertIs(self.api.resource, self.api.getResource())
 
-
     def test_basic(self):
         """
         Basic Saratoga test.
@@ -210,6 +217,19 @@ class SaratogaAPITests(TestCase):
         return self.api.test("/v1/example", replaceEmptyWithEmptyDict=True
             ).addCallback(rendered)
 
+    def test_basicRegex(self):
+        """
+        Basic Saratoga test, testing the regex stuff.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"id": "4"}}
+            )
+
+        return self.api.test("/v1/example/4").addCallback(rendered)
+        
+        
     def test_handlingOfExceptions(self):
         """
         Test that throwing a generic exception is handled gracefully.
