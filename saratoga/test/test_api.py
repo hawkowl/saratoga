@@ -1,4 +1,7 @@
 from twisted.trial.unittest import TestCase
+from twisted.python.modules import getModule
+
+from shutil import copy
 
 from saratoga.api import SaratogaAPI
 
@@ -23,6 +26,7 @@ class APIImpl(object):
             self.urlParams_GET = self.example_GET
             self.requestParams_GET = self.example_GET
             self.responseParams_GET = self.example_GET
+            self.responseParamsExtLoad_GET = self.example_GET
             self.dictResponse_GET = self.listResponse_GET
             self.requiresAuth_GET = self.example_GET
             self.invalidParamsType_GET = self.example_GET
@@ -54,6 +58,13 @@ APIDef = {
                     "additionalProperties": False,
                     "required": ["hello", "goodbye"]
                 },
+            }]
+        },
+        {
+            "endpoint": "responseParamsExtLoad",
+            "getProcessors": [{
+                "versions": [1],
+                "responseSchema": "jsonschemaext.json"
             }]
         },
         {
@@ -184,6 +195,9 @@ class SaratogaErrorCatchingTests(TestCase):
 class SaratogaAPITests(TestCase):
 
     def setUp(self):
+        fp = getModule(__name__).filePath
+        copy(fp.parent().child("jsonschemaext.json").path, "jsonschemaext.json")
+        
         self.api = SaratogaAPI(APIImpl, APIDef)
 
     def test_getResource(self):
@@ -375,6 +389,24 @@ class SaratogaAPITests(TestCase):
         d = self.api.test("/v1/responseParams",
             params={"cake": "yes", "muffin": "yes", "pizza": "slice"})
         return d.addCallback(rendered)
+
+
+    def test_extLoadJSONSchema(self):
+        """
+        Test that it loads external JSON Schema by loading in something that it
+        will fail.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "error",
+                "data": "Internal server error."}
+            )
+            warnings = self.flushLoggedErrors()
+            self.assertEqual(warnings[0].getErrorMessage(), "u'cake' is a "
+                "required property, u'muffin' is a required property")
+            
+        return self.api.test("/v1/responseParamsExtLoad").addCallback(rendered)
 
 
     def test_requiredResponseParamsReturnsErrorIfNotGiven(self):

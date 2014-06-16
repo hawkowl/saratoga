@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "cake": {},
+        "muffin": {},
+        "pizza": {}
+    },
+    "required": ["cake", "muffin"],
+    "additionalProperties": false
+}

@@ -1,5 +1,5 @@
 from twisted.internet.defer import maybeDeferred, Deferred
-from twisted.python import log
+from twisted.python import log, filepath
 from twisted.python.failure import Failure
 from twisted.web.resource import Resource
 import twisted
@@ -136,7 +136,6 @@ class SaratogaResource(Resource):
                 params = {}
 
             userParams = {"params": params}
-
             schema = processor.get("requestSchema", None)
 
             if schema:
@@ -225,6 +224,7 @@ class SaratogaResource(Resource):
             d.addCallback(_write, request, api, processor)
             d.addErrback(_error, request, api, processor)
 
+            # Kick off the chain
             d.callback(None)
 
         else:
@@ -274,8 +274,19 @@ class SaratogaAPI(object):
 
         for api in self.APIDefinition:
             for verb in ["GET", "POST"]:
-                for processor in api.get(
-                    "{}Processors".format(verb.lower()), []):
+                for processor in api.get("{}Processors".format(
+                        verb.lower()), []):
+
+                    schemas = {
+                        "requestSchema": processor.get("requestSchema"),
+                        "responseSchema": processor.get("responseSchema")
+                    }
+                
+                    for key, val in schemas.iteritems():
+                        if isinstance(val, basestring):
+                            i = json.load(filepath.FilePath(".").preauthChild(val).open())
+                            processor[key] = i
+
                     for version in processor["versions"]:
                         if version not in self._versions:
                             raise Exception("Version mismatch - {} in {} is "
