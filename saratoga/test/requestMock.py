@@ -1,5 +1,3 @@
-from mock import Mock
-
 from StringIO import StringIO
 
 from twisted.web import server
@@ -30,7 +28,8 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
     requestMock is originally from Klein, with the improvements I made in Klein
     PR #30.
     """
-
+    from mock import Mock
+    
     if not headers:
         headers = {}
 

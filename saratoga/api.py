@@ -40,7 +40,7 @@ class SaratogaResource(Resource):
 
         def _write(result, request, api, processor):
 
-            if not result:
+            if result is None:
                 result = {}
 
             schema = processor.get("responseSchema", None)
@@ -130,10 +130,17 @@ class SaratogaResource(Resource):
 
         if processor:
             requestContent = request.content.read()
-            params = json.loads(requestContent)
+            
+            try:
+                params = json.loads(requestContent)
+            except ValueError:
+                params = None
+                
 
             if not params:
                 params = {}
+                for key, val in request.args.iteritems():
+                    params[key] = val[0]
 
             userParams = {"params": params}
             schema = processor.get("requestSchema", None)
