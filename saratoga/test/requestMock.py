@@ -121,7 +121,7 @@ def _testItem(resource, path, params=None, method="GET", useBody=True,
         if replaceEmptyWithEmptyDict and not params:
             params = {}
         req = requestMock(path, body=json.dumps(params), method=method,
-                headers=headers)
+                          headers=headers)
     else:
         req = requestMock(path, args=params, method=method,
             headers=headers)

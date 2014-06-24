@@ -134,13 +134,12 @@ class SaratogaResource(Resource):
             try:
                 params = json.loads(requestContent)
             except ValueError:
-                params = None
+                params = {}
                 
-
-            if not params:
+            if not params and request.args is not None:
                 params = {}
                 for key, val in request.args.iteritems():
-                    if len(val) == 1:
+                    if type(val) in [list, tuple] and len(val) == 1:
                         params[key] = val[0]
                     else:
                         params[key] = val
@@ -148,6 +147,9 @@ class SaratogaResource(Resource):
             userParams = {"params": params}
             schema = processor.get("requestSchema", None)
 
+            if params is None:
+                params = {}
+            
             if schema:
                 v = Draft4Validator(schema)
                 errors = sorted(v.iter_errors(params), key=lambda e: e.path)

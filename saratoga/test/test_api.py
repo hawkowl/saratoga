@@ -289,6 +289,19 @@ class SaratogaAPITests(TestCase):
         return self.api.test("/v1/dictResponse",
             params={"data": {"hi": "there"}}).addCallback(rendered)
 
+    def test_dictResponsePOSTArgs(self):
+        """
+        Test that it allows a dict response.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"hi": "there"}}
+            )
+
+        return self.api.test("/v1/dictResponse",
+                             params={"data": {"hi": "there"}}, useBody=False).addCallback(rendered)
+
 
     def test_listResponse(self):
         """
@@ -303,6 +316,18 @@ class SaratogaAPITests(TestCase):
         return self.api.test("/v1/listResponse",
             params={"data": ["hi", "there"]}).addCallback(rendered)
 
+    def test_listResponsePOSTArgs(self):
+        """
+        Test that it allows a list response.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": ["hi", "there"]}
+            )
+
+        return self.api.test("/v1/listResponse",
+                             params={"data": [["hi", "there"]]}, useBody=False).addCallback(rendered)
 
     def test_dictResponseFailure(self):
         """

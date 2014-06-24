@@ -10,9 +10,8 @@ class AuthTests(unittest.TestCase):
 
         authenticator = auth.DefaultAuthenticator(None)
 
-        self.assertRaises(
-            AuthenticationFailed, authenticator.auth_usernameAndPassword,
-            "user", "pass")
+        f = authenticator.auth_usernameAndPassword("user", "pass")
+        self.assertIsInstance(self.failureResultOf(f).value, AuthenticationFailed)
 
 
     def test_inMemoryStringSharedSecretSourcePassword(self):
