@@ -140,7 +140,10 @@ class SaratogaResource(Resource):
             if not params:
                 params = {}
                 for key, val in request.args.iteritems():
-                    params[key] = val[0]
+                    if len(val) == 1:
+                        params[key] = val[0]
+                    else:
+                        params[key] = val
 
             userParams = {"params": params}
             schema = processor.get("requestSchema", None)
@@ -213,7 +216,6 @@ class SaratogaResource(Resource):
 
                     if algoType in self.api.APIMetadata.get(
                         "AllowedHMACTypes", ["sha256", "sha512"]):
-
 
                         d.addCallback(lambda _:
                             self.api.serviceClass.auth.auth_HMAC(authUser,

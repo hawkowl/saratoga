@@ -59,7 +59,7 @@ class DefaultAuthenticator(object):
 
             raise AuthenticationFailed("Authentication failed.")
 
-        return self._getUserDetails(username).addCallback(_continue)
+        return defer.maybeDeferred(self._getUserDetails, username).addCallback(_continue)
 
 
     def auth_HMAC(self, username, hmacUser, content, algorithm):
@@ -78,4 +78,4 @@ class DefaultAuthenticator(object):
 
             raise AuthenticationFailed("Authentication failed.")
 
-        return self._getUserDetails(username).addCallback(_continue)    
+        return defer.maybeDeferred(self._getUserDetails, username).addCallback(_continue)    
