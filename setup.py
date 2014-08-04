@@ -35,7 +35,8 @@ setup(
         "twisted", "http", "api"
         ],
     install_requires=[
-        "twisted"
+        "twisted",
+        "jsonschema"
         ],
     long_description=file('README.rst').read()
 )
