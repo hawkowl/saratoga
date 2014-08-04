@@ -1,7 +1,14 @@
 from saratoga import auth
 from saratoga import AuthenticationFailed
 
+
+from twisted.web import server
+from twisted.web.http_headers import Headers
+from twisted.web.test.test_web import DummyChannel
+
 from twisted.trial import unittest
+
+from StringIO import StringIO
 
 
 class AuthTests(unittest.TestCase):
@@ -49,8 +56,6 @@ class AuthTests(unittest.TestCase):
 
     def test_inMemoryStringSharedSecretSourceHMAC(self):
 
-        def _catch(res):
-            self.assertIsInstance(res.value, AuthenticationFailed)
 
         users = [
             {
@@ -67,7 +72,34 @@ class AuthTests(unittest.TestCase):
         authenticator = auth.DefaultAuthenticator(
             auth.InMemoryStringSharedSecretSource(users))
 
-        authDeferred = authenticator.auth_HMAC("bob", "a878291f4cd5efdc03cdcc2e208b0174c29176624660e0338d6c7b88c3b05bcb", "hi", "sha256")
+        host = "example.com"
+        port = 8080
+        body = "hi!"
+        args = {}
+
+        request = server.Request(DummyChannel(), False)
+        request.gotLength(len(body))
+        request.content = StringIO()
+        request.content.write(body)
+        request.content.seek(0)
+        request.args = args
+        request.setHost(host, port, False)
+        request.uri = "example.com/test"
+        request.path = "/test"
+        request.method = "GET"
+        request.clientproto = 'HTTP/1.1'
+
+        import httpsig
+
+        key_id = "alice"
+        secret = "wonderland"
+        
+        hs = httpsig.HeaderSigner(key_id, secret, algorithm="hmac-sha256")
+        signed_headers_dict = hs.sign({"Date": "Tue, 01 Jan 2014 01:01:01 GMT", "Host": "example.com"}, method="GET", path="/test")
+        
+        request.requestHeaders = Headers({x:[y] for x, y in signed_headers_dict.iteritems()})
+        
+        authDeferred = authenticator.auth_HMAC("alice", request)
 
         return authDeferred
 

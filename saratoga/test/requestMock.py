@@ -23,7 +23,7 @@ def _render(resource, request):
         raise ValueError("Unexpected return value: %r" % (result,))
 
 def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
-                body=None, headers=None, args=None, reactor=None):
+                body=None, headers=None, args=None, reactor=None, enableHMAC=False):
     """
     requestMock is originally from Klein, with the improvements I made in Klein
     PR #30.
@@ -33,6 +33,15 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
     if not headers:
         headers = {}
 
+    headers["Date"] = ["Tue, 01 Jan 2014 01:01:01 GMT"]
+
+    if enableHMAC:
+        import httpsig
+
+        hs = httpsig.HeaderSigner(enableHMAC[0], enableHMAC[1], algorithm="hmac-sha256")
+        signed_headers_dict = hs.sign(headers={x:y[0] for x,y in headers.iteritems()},
+                                      method=method, path=path)
+        headers = {x:[y] for x,y in signed_headers_dict.iteritems()}
     if not body:
         body = ''
 
@@ -112,7 +121,7 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
 
 
 def _testItem(resource, path, params=None, method="GET", useBody=True,
-              headers=None, replaceEmptyWithEmptyDict=True):
+              headers=None, replaceEmptyWithEmptyDict=True, enableHMAC=False):
 
     def _cb(result, request):
         return request
@@ -121,10 +130,10 @@ def _testItem(resource, path, params=None, method="GET", useBody=True,
         if replaceEmptyWithEmptyDict and not params:
             params = {}
         req = requestMock(path, body=json.dumps(params), method=method,
-                          headers=headers)
+                          headers=headers, enableHMAC=enableHMAC)
     else:
         req = requestMock(path, args=params, method=method,
-            headers=headers)
+                          headers=headers, enableHMAC=enableHMAC)
 
     d = _render(resource, req)
     d.addCallback(_cb, req)

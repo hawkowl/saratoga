@@ -58,7 +58,8 @@ class SaratogaResource(Resource):
                 "data": result
             }
 
-            finishedResult = json.dumps(response)
+            finishedResult = json.dumps(response, sort_keys=True,
+                                        indent=4, separators=(',', ': '))
 
             request.write(finishedResult)
             request.finish()
@@ -91,7 +92,8 @@ class SaratogaResource(Resource):
                 "data": errmessage
             }
 
-            request.write(json.dumps(response))
+            request.write(json.dumps(response, sort_keys=True,
+                                     indent=4, separators=(',', ': ')))
             request.finish()
 
             return 1
@@ -194,40 +196,34 @@ class SaratogaResource(Resource):
                 authType = authType.lower()
 
                 if not authType in ["basic"]:
-                    if not authType.startswith("hmac-"):   
+                    if not authType.startswith("signature"):   
                         fail = AuthenticationFailed(
                             "Unsupported Authorization type '{}'".format(
                                 authType.upper()))
                         return _quickfail(fail)
-
-                try:
-                    authDetails = b64decode(authDetails)
-                    authUser, authPassword = authDetails.split(":")
-                except:
-                    fail = AuthenticationFailed(
-                        "Malformed Authorization header.")
-                    return _quickfail(fail)
                 
                 if authType == "basic":
+                    try:
+                        authDetails = b64decode(authDetails)
+                        authUser, authPassword = authDetails.split(":")
+                    except:
+                        fail = AuthenticationFailed(
+                            "Malformed Authorization header.")
+                        return _quickfail(fail)
+                    
                     d.addCallback(lambda _:
                         self.api.serviceClass.auth.auth_usernameAndPassword(
                             authUser, authPassword))
 
-                if authType.startswith("hmac-"):
-                    algoType = authType.split("-")[1]
-
-                    if algoType in self.api.APIMetadata.get(
-                        "AllowedHMACTypes", ["sha256", "sha512"]):
-
-                        d.addCallback(lambda _:
-                            self.api.serviceClass.auth.auth_HMAC(authUser,
-                                authPassword, requestContent, algoType))
-                    else:
-                        fail = AuthenticationFailed(
-                            "Unsupported HMAC type '{}'".format(
-                                algoType.upper()))
-                        return _quickfail(fail)
+                if authType.startswith("signature"):
                     
+                    keyBits = request.getHeader("Authorization")\
+                                     .split("Signature ")[1].split(",")
+                    keyBits = [z.split("=", 1) for z in keyBits]
+                    keyBits = {x:y[1:-1] for x,y in keyBits}
+                    
+                    d.addCallback(lambda _:
+                            self.api.serviceClass.auth.auth_HMAC(keyBits["keyId"], request)) 
 
                 d.addCallback(_authAdditional)
 
@@ -318,15 +314,17 @@ class SaratogaAPI(object):
 
 
     def getResource(self):
-
+        """
+        Get the Twisted Web Resource.
+        """
         return self.resource
 
 
     def test(self, path, params=None, headers=None, method="GET", useBody=True,
-             replaceEmptyWithEmptyDict=False):
+             replaceEmptyWithEmptyDict=False, enableHMAC=False):
 
         return testItem(self.resource, path, params=params, headers=headers,
-            method=method, useBody=useBody,
+            method=method, useBody=useBody, enableHMAC=enableHMAC,
             replaceEmptyWithEmptyDict=replaceEmptyWithEmptyDict)
 
     def run(self, port=8080): # pragma: no cover
