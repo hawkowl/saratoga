@@ -9,3 +9,4 @@ htmlcov/
 .tox/
 _build
 .DS_Store
+*~

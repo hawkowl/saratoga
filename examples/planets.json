@@ -1,0 +1,19 @@
+{
+    "metadata": {
+        "name": "planetinfo",
+        "friendlyName": "Planet Information",
+        "versions": [1]
+    },
+    "endpoints": [
+        {
+            "name": "yearlength",
+            "friendlyName": "Year Length of Planets",
+            "endpoint": "yearlength",
+            "getProcessors": [
+                {
+                    "versions": [1]
+                }
+            ]
+        }
+    ]
+}
