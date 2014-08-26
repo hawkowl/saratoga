@@ -12,15 +12,15 @@ from saratoga import (
     AuthenticationRequired,
     DoesNotExist,
     APIError,
+    outputFormats,
     __gitversion__
 )
 
 from base64 import b64decode
 from jsonschema import Draft4Validator
 
-import json
 import re
-
+import json
 
 
 class DefaultServiceClass(object):
@@ -53,14 +53,9 @@ class SaratogaResource(Resource):
                     raise BadResponseParams(
                         ", ".join(e.message for e in errors))
 
-            response = {
-                "status": "success",
-                "data": result
-            }
-
-            finishedResult = json.dumps(response, sort_keys=True,
-                                        indent=4, separators=(',', ': '))
-
+            finishedResult = self.api.outputRegistry.renderAutomaticResponse(
+                request, "success", result)
+            
             request.write(finishedResult)
             request.finish()
             
@@ -87,13 +82,10 @@ class SaratogaResource(Resource):
                 errstatus = "fail"
                 errmessage = error.message
 
-            response = {
-                "status": errstatus,
-                "data": errmessage
-            }
-
-            request.write(json.dumps(response, sort_keys=True,
-                                     indent=4, separators=(',', ': ')))
+            finishedResult = self.api.outputRegistry.renderAutomaticResponse(
+                request, errstatus, errmessage)
+            
+            request.write(finishedResult)
             request.finish()
 
             return 1
@@ -112,7 +104,9 @@ class SaratogaResource(Resource):
             return _error(Failure(fail), request, None, None)
 
 
-        request.setHeader("Content-Type", "application/json; charset=utf-8")
+        request.setHeader("Content-Type",
+                          self.api.outputRegistry.getFormat(request) + ";" +
+                          "charset=utf-8")
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
                 __gitversion__, twisted.__version__))
 
@@ -244,13 +238,22 @@ class SaratogaResource(Resource):
 
 class SaratogaAPI(object):
 
-    def __init__(self, implementation, definition, serviceClass=None):
+    def __init__(self, implementation, definition, serviceClass=None,
+                 outputRegistry=None):
 
         if serviceClass:
             self.serviceClass = serviceClass
         else:
             self.serviceClass = DefaultServiceClass()
 
+        if outputRegistry:
+            self.outputRegistry = outputRegistry
+        else:
+            self.outputRegistry = outputFormats.OutputRegistry()
+            self.outputRegistry.register("application/json",
+                                         outputFormats.JSendJSONOutputFormat)
+            self.outputRegistry.defaultOutputFormat = "application/json"
+            
         self._implementation = implementation
         self.implementation = DefaultServiceClass()
 
