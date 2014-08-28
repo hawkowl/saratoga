@@ -8,7 +8,7 @@ class OutputRegistry(object):
     
     def getFormat(self, request):
 
-        fmtList = [self.defaultOutputFormat]
+        fmtList = []
         
         if request.requestHeaders.hasHeader("Accept"):
             fmtList = request.requestHeaders.getRawHeaders("Accept")[0].split(";")
@@ -16,8 +16,8 @@ class OutputRegistry(object):
         for fmt in fmtList:
             if fmt in self._outputFormats:
                 return fmt
-        
-        raise Exception("None of %s are a format we understand." % (str(fmtList)))
+
+        return self.defaultOutputFormat
 
         
     def renderAutomaticResponse(self, request, status, data):
