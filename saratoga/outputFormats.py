@@ -1,4 +1,4 @@
-from negotiator import ContentNegotiator, AcceptParameters, ContentType, Language
+from negotiator import ContentNegotiator, AcceptParameters, ContentType
 import json
 
 
@@ -6,22 +6,24 @@ class OutputRegistry(object):
 
     def __init__(self):
         self._outputFormats = {}
+        self._outputFormatsPreference = []
         self.defaultOutputFormat = None
     
     def getFormat(self, request):
 
         if request.requestHeaders.hasHeader("Accept"):            
             default_params = AcceptParameters(
-                ContentType(self.defaultOutputFormat), Language("en"))
+                ContentType(self.defaultOutputFormat))
 
-            acceptable = [AcceptParameters(ContentType(x), Language("en")
-                                       ) for x in self._outputFormats.keys()]
-
+            inOrderOfPref = [self.defaultOutputFormat] + self._outputFormatsPreference
+            
+            acceptable = [AcceptParameters(ContentType(x)
+                                       ) for x in inOrderOfPref]
+            
             cn = ContentNegotiator(default_params, acceptable)
-
             accp = cn.negotiate(
                 accept=request.requestHeaders.getRawHeaders("Accept")[0])
-
+            
             return str(accp.content_type) if accp else self.defaultOutputFormat
 
         return self.defaultOutputFormat
@@ -38,6 +40,7 @@ class OutputRegistry(object):
         Register an output format.
         """
         self._outputFormats[acceptHeader] = func
+        self._outputFormatsPreference.append(acceptHeader)
 
 def JSendJSONOutputFormat(status, data):
     """
