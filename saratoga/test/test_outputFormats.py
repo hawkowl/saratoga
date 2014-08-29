@@ -67,3 +67,34 @@ class SaratogaAcceptHeaderTests(TestCase):
         return self.api.test("/v1/example",
                              headers={"Accept": ["application/debuggablejson"]}
                          ).addCallback(rendered)
+
+    def test_listDefaultGiven(self):
+         
+        def rendered(request):
+            self.assertEqual(
+                request.getWrittenData(),
+                'JSON'
+            )
+
+        return self.api.test("/v1/example",
+                             headers={"Accept": ["text/html,application/xhtml+xm"
+                                                 "l,application/xml;q=0.9,"
+                                                 "*/*;q=0.8"]}
+                         ).addCallback(rendered)
+
+    def test_qualityPreferencesGiven(self):
+         
+        def rendered(request):
+            self.assertEqual(
+                request.getWrittenData(),
+                'YAML'
+            )
+
+        return self.api.test("/v1/example",
+                             headers={"Accept": ["text/html,application/xhtml+xm"
+                                                 "l,application/json;q=0.7,"
+                                                 "application/yaml;q=0.8"]}
+                         ).addCallback(rendered)
+
+
+       

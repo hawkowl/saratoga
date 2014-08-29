@@ -1,4 +1,6 @@
+from negotiator import ContentNegotiator, AcceptParameters, ContentType, Language
 import json
+
 
 class OutputRegistry(object):
 
@@ -8,14 +10,19 @@ class OutputRegistry(object):
     
     def getFormat(self, request):
 
-        fmtList = []
-        
-        if request.requestHeaders.hasHeader("Accept"):
-            fmtList = request.requestHeaders.getRawHeaders("Accept")[0].split(";")
+        if request.requestHeaders.hasHeader("Accept"):            
+            default_params = AcceptParameters(
+                ContentType(self.defaultOutputFormat), Language("en"))
 
-        for fmt in fmtList:
-            if fmt in self._outputFormats:
-                return fmt
+            acceptable = [AcceptParameters(ContentType(x), Language("en")
+                                       ) for x in self._outputFormats.keys()]
+
+            cn = ContentNegotiator(default_params, acceptable)
+
+            accp = cn.negotiate(
+                accept=request.requestHeaders.getRawHeaders("Accept")[0])
+
+            return str(accp.content_type) if accp else self.defaultOutputFormat
 
         return self.defaultOutputFormat
 
