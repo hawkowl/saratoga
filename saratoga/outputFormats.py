@@ -4,29 +4,27 @@ import json
 
 class OutputRegistry(object):
 
-    def __init__(self):
+    def __init__(self, defaultOutputFormat):
         self._outputFormats = {}
         self._outputFormatsPreference = []
-        self.defaultOutputFormat = None
+        self.defaultOutputFormat = defaultOutputFormat
     
     def getFormat(self, request):
 
-        if request.requestHeaders.hasHeader("Accept"):            
-            default_params = AcceptParameters(
-                ContentType(self.defaultOutputFormat))
+        defaultOutput = AcceptParameters(
+            ContentType(self.defaultOutputFormat, params='q=0'))
+        
+        acceptable = [defaultOutput] + [AcceptParameters(ContentType(x)) for x in self._outputFormatsPreference]
+        
+        cn = ContentNegotiator(defaultOutput, acceptable)
+        if request.requestHeaders.hasHeader("Accept"):
+            kwargs = {"accept": request.requestHeaders.getRawHeaders("Accept")[0]}
+        else:
+            kwargs = {}
+            
+        accp = cn.negotiate(**kwargs)
 
-            inOrderOfPref = [self.defaultOutputFormat] + self._outputFormatsPreference
-            
-            acceptable = [AcceptParameters(ContentType(x)
-                                       ) for x in inOrderOfPref]
-            
-            cn = ContentNegotiator(default_params, acceptable)
-            accp = cn.negotiate(
-                accept=request.requestHeaders.getRawHeaders("Accept")[0])
-            
-            return str(accp.content_type) if accp else self.defaultOutputFormat
-
-        return self.defaultOutputFormat
+        return str(accp.content_type) if accp else None
 
         
     def renderAutomaticResponse(self, request, status, data):

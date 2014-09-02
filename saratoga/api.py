@@ -104,8 +104,16 @@ class SaratogaResource(Resource):
             return _error(Failure(fail), request, None, None)
 
 
-        request.setHeader("Content-Type",
-                          self.api.outputRegistry.getFormat(request) + ";" +
+        outputFormat = self.api.outputRegistry.getFormat(request)
+
+        if not outputFormat:
+            request.setResponseCode(406)
+            request.write("406 Not Acceptable, please use one of: ")
+            request.write(", ".join(self.api.outputRegistry._outputFormatsPreference))
+            request.finish()
+            return 1
+
+        request.setHeader("Content-Type", outputFormat + ";" +
                           "charset=utf-8")
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
                 __gitversion__, twisted.__version__))
@@ -249,10 +257,9 @@ class SaratogaAPI(object):
         if outputRegistry:
             self.outputRegistry = outputRegistry
         else:
-            self.outputRegistry = outputFormats.OutputRegistry()
+            self.outputRegistry = outputFormats.OutputRegistry("application/json")
             self.outputRegistry.register("application/json",
                                          outputFormats.JSendJSONOutputFormat)
-            self.outputRegistry.defaultOutputFormat = "application/json"
             
         self._implementation = implementation
         self.implementation = DefaultServiceClass()

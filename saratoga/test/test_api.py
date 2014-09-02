@@ -203,7 +203,7 @@ class SaratogaAPITests(TestCase):
 
     def test_customOutputFormatRegistry(self):
 
-        o = OutputRegistry()
+        o = OutputRegistry("application/json")
         api = SaratogaAPI(APIImpl, APIDef, outputRegistry=o)
         self.assertIs(o, api.outputRegistry)
         

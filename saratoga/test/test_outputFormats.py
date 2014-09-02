@@ -13,12 +13,11 @@ class SaratogaAcceptHeaderTests(TestCase):
         def respYAML(status, data):
             return "YAML"
 
-        o = outputFormats.OutputRegistry()
+        o = outputFormats.OutputRegistry("application/json")
         o.register("application/yaml", respYAML)
         o.register("application/json", respJSON)
         o.register("application/debuggablejson",
                    outputFormats.DebuggableJSendJSONOutputFormat)
-        o.defaultOutputFormat = "application/json"
         
         self.api = api.SaratogaAPI(APIImpl, APIDef, outputRegistry = o)
 
@@ -29,6 +28,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                 request.getWrittenData(),
                 "JSON"
             )
+            self.assertEqual(request.code, 200)
 
         return self.api.test("/v1/example").addCallback(rendered)
 
@@ -39,6 +39,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                 request.getWrittenData(),
                 "YAML"
             )
+            self.assertEqual(request.code, 200)
 
         return self.api.test("/v1/example",
                              headers={"Accept": ["application/yaml"]}
@@ -49,8 +50,10 @@ class SaratogaAcceptHeaderTests(TestCase):
         def rendered(request):
             self.assertEqual(
                 request.getWrittenData(),
-                "JSON"
+                "406 Not Acceptable, please use one of: application/yaml, appli"
+                "cation/json, application/debuggablejson"
             )
+            self.assertEqual(request.code, 406)
 
         return self.api.test("/v1/example",
                              headers={"Accept": ["application/whatever"]}
@@ -63,6 +66,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                 request.getWrittenData(),
                 '{\n    "data": {},\n    "status": "success"\n}'
             )
+            self.assertEqual(request.code, 200)
 
         return self.api.test("/v1/example",
                              headers={"Accept": ["application/debuggablejson"]}
@@ -75,6 +79,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                 request.getWrittenData(),
                 'JSON'
             )
+            self.assertEqual(request.code, 200)
 
         return self.api.test("/v1/example",
                              headers={"Accept": ["text/html,application/xhtml+xm"
@@ -89,6 +94,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                 request.getWrittenData(),
                 'YAML'
             )
+            self.assertEqual(request.code, 200)
 
         return self.api.test("/v1/example",
                              headers={"Accept": ["text/html,application/xhtml+xm"
