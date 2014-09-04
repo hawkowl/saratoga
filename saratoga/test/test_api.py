@@ -4,6 +4,7 @@ from twisted.python.modules import getModule
 from shutil import copy
 
 from saratoga.api import SaratogaAPI
+from saratoga.outputFormats import OutputRegistry
 
 import json
 
@@ -200,6 +201,12 @@ class SaratogaAPITests(TestCase):
         
         self.api = SaratogaAPI(APIImpl, APIDef)
 
+    def test_customOutputFormatRegistry(self):
+
+        o = OutputRegistry("application/json")
+        api = SaratogaAPI(APIImpl, APIDef, outputRegistry=o)
+        self.assertIs(o, api.outputRegistry)
+        
     def test_getResource(self):
         """
         Check that Saratoga returns the correct resource.
