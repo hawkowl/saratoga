@@ -43,7 +43,7 @@ class SaratogaResource(Resource):
         # Some vars we'll need later
         args, api, version, processor = ({}, None, None, {})
         method = request.method.upper()
-        
+
         # Figure out what output format we're going to be using
         outputFormat = self.api.outputRegistry.getFormat(request)
 
@@ -56,7 +56,7 @@ class SaratogaResource(Resource):
             request.finish()
             return 1
 
-        # Set the content type according to what was given before 
+        # Set the content type according to what was given before
         request.setHeader("Content-Type", outputFormat + "; charset=utf-8")
         # Say who we are!
         request.setHeader("Server", "Saratoga {} on Twisted {}".format(
@@ -74,17 +74,17 @@ class SaratogaResource(Resource):
             if schema:
                 v = Draft4Validator(schema)
                 errors = sorted(v.iter_errors(result), key=lambda e: e.path)
-                
+
                 if errors:
                     raise BadResponseParams(
                         ", ".join(e.message for e in errors))
 
             finishedResult = self.api.outputRegistry.renderAutomaticResponse(
                 request, "success", result)
-            
+
             request.write(finishedResult)
             request.finish()
-            
+
 
         def _error(failure):
             """
@@ -112,7 +112,7 @@ class SaratogaResource(Resource):
 
             finishedResult = self.api.outputRegistry.renderAutomaticResponse(
                 request, errstatus, errmessage)
-            
+
             request.write(finishedResult)
             request.finish()
 
@@ -135,7 +135,7 @@ class SaratogaResource(Resource):
             fail = BadRequestParams("Method not allowed.")
             fail.code = 405
             return _quickfail(fail)
-            
+
 
         # Try and look up the static route in the endpoints list
         pathLookup = endpointMethods.get(request.path)
@@ -150,20 +150,20 @@ class SaratogaResource(Resource):
                     pathLookup = endpointMethods[item]
                     args = match.groups()
                     break
-                    
+
         if not pathLookup:
             fail = DoesNotExist("Endpoint does not exist.")
             return _quickfail(fail)
         else:
             # Some variables we'll need later
             params = {}
-            
+
             # Expand out the looked up path
             api, version, processor = pathLookup
 
             # Read in the content from the request
             requestContent = request.content.read()
-            
+
             try:
                 # Parse it from JSON
                 # XXX: We should do this according to what it is, but JSON will
@@ -183,15 +183,15 @@ class SaratogaResource(Resource):
 
             # Make sure it's a dict, even if it's empty
             params = {} if not params else params
-                
+
             userParams = {"params": params}
             schema = processor.get("requestSchema")
-            
+
             if schema:
                 # Validate the schema, if we've got it
                 v = Draft4Validator(schema)
                 errors = sorted(v.iter_errors(params), key=lambda e: e.path)
-                
+
                 if errors:
                     return _quickfail(BadRequestParams(", ".join(
                         e.message for e in errors)))
@@ -229,12 +229,12 @@ class SaratogaResource(Resource):
                 authType, authDetails = auth.split()
                 authType = authType.lower()
 
-                if not authType in ["basic"] and  not authType.startswith("signature"):   
+                if not authType in ["basic"] and  not authType.startswith("signature"):
                     fail = AuthenticationFailed(
                             "Unsupported Authorization type '{}'".format(
                                 authType.upper()))
                     return _quickfail(fail)
-                        
+
                 if authType == "basic":
                     try:
                         authDetails = b64decode(authDetails)
@@ -242,20 +242,20 @@ class SaratogaResource(Resource):
                     except:
                         fail = AuthenticationFailed("Malformed Authorization header.")
                         return _quickfail(fail)
-                    
+
                     d.addCallback(lambda _:
                         self.api.serviceClass.auth.auth_usernameAndPassword(
                             authUser, authPassword))
 
                 if authType.startswith("signature"):
-                    
+
                     keyBits = request.getHeader("Authorization")\
                                      .split("Signature ")[1].split(",")
                     keyBits = [z.split("=", 1) for z in keyBits]
                     keyBits = {x:y[1:-1] for x,y in keyBits}
-                    
+
                     d.addCallback(lambda _:
-                            self.api.serviceClass.auth.auth_HMAC(keyBits["keyId"], request)) 
+                            self.api.serviceClass.auth.auth_HMAC(keyBits["keyId"], request))
 
                 d.addCallback(_authAdditional)
 
@@ -265,7 +265,7 @@ class SaratogaResource(Resource):
 
             # Kick off the chain
             d.callback(None)
-            
+
             return 1
 
 
@@ -275,7 +275,7 @@ class SaratogaAPI(object):
                  methods=["GET", "POST", "HEAD", "PUT", "DELETE", "PATCH"]):
 
         methods = [x.upper() for x in methods]
-        
+
         if serviceClass:
             self.serviceClass = serviceClass
         else:
@@ -326,7 +326,7 @@ class SaratogaAPI(object):
                         "requestSchema": processor.get("requestSchema"),
                         "responseSchema": processor.get("responseSchema")
                     }
-                
+
                     for key, val in schemas.iteritems():
                         if isinstance(val, basestring):
                             i = json.load(filepath.FilePath(".").preauthChild(val).open())
@@ -343,7 +343,7 @@ class SaratogaAPI(object):
                         funcName = api.get("func") or api["endpoint"]
                         if not hasattr(versionClass,
                             "{}_{}".format(funcName, verb)):
-                            raise Exception("Implementation is missing the {} " 
+                            raise Exception("Implementation is missing the {} "
                                 "processor in the v{} {} endpoint".format(
                                     verb, version, funcName))
 

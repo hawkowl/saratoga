@@ -24,7 +24,7 @@ class APIImpl(object):
 
         def nothing_GET(self, request, params):
             pass
-            
+
         def __init__(self):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
@@ -205,7 +205,7 @@ class SaratogaAPITests(TestCase):
     def setUp(self):
         fp = getModule(__name__).filePath
         copy(fp.parent().child("jsonschemaext.json").path, "jsonschemaext.json")
-        
+
         self.api = SaratogaAPI(APIImpl, APIDef)
 
     def test_customOutputFormatRegistry(self):
@@ -213,7 +213,7 @@ class SaratogaAPITests(TestCase):
         o = OutputRegistry("application/json")
         api = SaratogaAPI(APIImpl, APIDef, outputRegistry=o)
         self.assertIs(o, api.outputRegistry)
-        
+
     def test_getResource(self):
         """
         Check that Saratoga returns the correct resource.
@@ -268,8 +268,8 @@ class SaratogaAPITests(TestCase):
             )
 
         return self.api.test("/v1/example/4").addCallback(rendered)
-        
-        
+
+
     def test_handlingOfExceptions(self):
         """
         Test that throwing a generic exception is handled gracefully.
@@ -456,7 +456,7 @@ class SaratogaAPITests(TestCase):
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(), "u'cake' is a "
                 "required property, u'muffin' is a required property")
-            
+
         return self.api.test("/v1/responseParamsExtLoad").addCallback(rendered)
 
 
@@ -542,7 +542,7 @@ class SaratogaAPITests(TestCase):
 
         return self.api.test("/v1/example", method="WAFFLE").addCallback(rendered)
 
-        
+
     def test_customHTTPMethods(self):
 
         APIDef = {
@@ -559,7 +559,7 @@ class SaratogaAPITests(TestCase):
             class v1(object):
                 def example_WAFFLE(self, request, params):
                     return "OK"
-                    
+
         self.api = SaratogaAPI(APIImpl, APIDef, methods=["WAFFLE"])
 
         def rendered(request):
@@ -588,7 +588,7 @@ class SaratogaAPITests(TestCase):
             class v1(object):
                 def example_WAFFLE(self, request, params):
                     return "OK"
-                    
+
         self.api = SaratogaAPI(APIImpl, APIDef, methods=["WaFfLE"])
 
         def rendered(request):

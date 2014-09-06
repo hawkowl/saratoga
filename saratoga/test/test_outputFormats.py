@@ -18,7 +18,7 @@ class SaratogaAcceptHeaderTests(TestCase):
         o.register("application/json", respJSON)
         o.register("application/debuggablejson",
                    outputFormats.DebuggableJSendJSONOutputFormat)
-        
+
         self.api = api.SaratogaAPI(APIImpl, APIDef, outputRegistry = o)
 
     def test_noneGiven(self):
@@ -46,7 +46,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                          ).addCallback(rendered)
 
     def test_unknownDefaultGiven(self):
-         
+
         def rendered(request):
             self.assertEqual(
                 request.getWrittenData(),
@@ -60,7 +60,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                          ).addCallback(rendered)
 
     def test_debuggableJSend(self):
-         
+
         def rendered(request):
             self.assertEqual(
                 request.getWrittenData(),
@@ -73,7 +73,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                          ).addCallback(rendered)
 
     def test_listDefaultGiven(self):
-         
+
         def rendered(request):
             self.assertEqual(
                 request.getWrittenData(),
@@ -88,7 +88,7 @@ class SaratogaAcceptHeaderTests(TestCase):
                          ).addCallback(rendered)
 
     def test_qualityPreferencesGiven(self):
-         
+
         def rendered(request):
             self.assertEqual(
                 request.getWrittenData(),
@@ -101,6 +101,3 @@ class SaratogaAcceptHeaderTests(TestCase):
                                                  "l,application/json;q=0.7,"
                                                  "application/yaml;q=0.8"]}
                          ).addCallback(rendered)
-
-
-       
