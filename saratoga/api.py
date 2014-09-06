@@ -13,7 +13,7 @@ from saratoga import (
     DoesNotExist,
     APIError,
     outputFormats,
-    __gitversion__
+    __version__
 )
 
 from base64 import b64decode
@@ -37,13 +37,39 @@ class SaratogaResource(Resource):
         self.api = api
 
     def render(self, request):
+        """
+        Render a response to this Saratoga server.
+        """
+        # Some vars we'll need later
+        args, api, version, processor = ({}, None, None, {})
+        method = request.method.upper()
+        
+        # Figure out what output format we're going to be using
+        outputFormat = self.api.outputRegistry.getFormat(request)
 
-        def _write(result, request, api, processor):
+        if not outputFormat:
+            # If there's no output format, return 406 Not Acceptable, as they
+            # have asked for something we can't give them
+            request.setResponseCode(406)
+            request.write("406 Not Acceptable, please use one of: ")
+            request.write(", ".join(self.api.outputRegistry._outputFormatsPreference))
+            request.finish()
+            return 1
 
+        # Set the content type according to what was given before 
+        request.setHeader("Content-Type", outputFormat + "; charset=utf-8")
+        # Say who we are!
+        request.setHeader("Server", "Saratoga {} on Twisted {}".format(
+                __version__, twisted.__version__))
+
+        def _write(result):
+            """
+            Serialise and write a successful result.
+            """
             if result is None:
                 result = {}
 
-            schema = processor.get("responseSchema", None)
+            schema = processor.get("responseSchema")
 
             if schema:
                 v = Draft4Validator(schema)
@@ -60,8 +86,10 @@ class SaratogaResource(Resource):
             request.finish()
             
 
-        def _error(failure, request, api, processor):
-            
+        def _error(failure):
+            """
+            Something's gone wrong, write out an error.
+            """
             error = failure.value
             errorcode = 500
 
@@ -88,73 +116,79 @@ class SaratogaResource(Resource):
             request.write(finishedResult)
             request.finish()
 
-            return 1
 
-
-        def _runAPICall(authParams, args, userParams, res):
-
-            api, version, processor = res
+        def _runAPICall(authParams):
+            """
+            Run the function that we've looked up.
+            """
             userParams["auth"] = authParams
-
-            d = maybeDeferred(func, self.api.serviceClass, request, userParams, *args)
-
-            return d
+            return maybeDeferred(func, self.api.serviceClass, request,
+                                 userParams, *args)
 
         def _quickfail(fail):
-            return _error(Failure(fail), request, None, None)
-
-
-        outputFormat = self.api.outputRegistry.getFormat(request)
-
-        if not outputFormat:
-            request.setResponseCode(406)
-            request.write("406 Not Acceptable, please use one of: ")
-            request.write(", ".join(self.api.outputRegistry._outputFormatsPreference))
-            request.finish()
+            _error(Failure(fail))
             return 1
 
-        request.setHeader("Content-Type", outputFormat + ";" +
-                          "charset=utf-8")
-        request.setHeader("Server", "Saratoga {} on Twisted {}".format(
-                __gitversion__, twisted.__version__))
+        endpointMethods = self.api.endpoints.get(method)
 
-        api, version, processor = self.api.endpoints[request.method].get(
-            request.path, (None, None, None))
-        args = {}
+        if not endpointMethods:
+            fail = BadRequestParams("Method not allowed.")
+            fail.code = 405
+            return _quickfail(fail)
+            
 
-        if not processor:
-            for item in self.api.endpoints[request.method]:
+        # Try and look up the static route in the endpoints list
+        pathLookup = endpointMethods.get(request.path)
+
+        if not pathLookup:
+            # If there's no static route, try dynamic Django-style routes
+            for item in endpointMethods:
                 a = re.compile("^" + item + "$")
                 match = a.match(request.path)
                 if match:
-                    api, version, processor = self.api.endpoints[request.method][item]
+                    # We found it, so break out of here
+                    pathLookup = endpointMethods[item]
                     args = match.groups()
-
                     break
+                    
+        if not pathLookup:
+            fail = DoesNotExist("Endpoint does not exist.")
+            return _quickfail(fail)
+        else:
+            # Some variables we'll need later
+            params = {}
+            
+            # Expand out the looked up path
+            api, version, processor = pathLookup
 
-        if processor:
+            # Read in the content from the request
             requestContent = request.content.read()
             
             try:
+                # Parse it from JSON
+                # XXX: We should do this according to what it is, but JSON will
+                # do for now
                 params = json.loads(requestContent)
             except ValueError:
-                params = {}
-                
+                pass
+
+            # If there's no content body, but there are query args, put them in
+            # a dictionary for us
             if not params and request.args is not None:
-                params = {}
                 for key, val in request.args.iteritems():
                     if type(val) in [list, tuple] and len(val) == 1:
                         params[key] = val[0]
                     else:
                         params[key] = val
 
+            # Make sure it's a dict, even if it's empty
+            params = {} if not params else params
+                
             userParams = {"params": params}
-            schema = processor.get("requestSchema", None)
-
-            if params is None:
-                params = {}
+            schema = processor.get("requestSchema")
             
             if schema:
+                # Validate the schema, if we've got it
                 v = Draft4Validator(schema)
                 errors = sorted(v.iter_errors(params), key=lambda e: e.path)
                 
@@ -162,11 +196,12 @@ class SaratogaResource(Resource):
                     return _quickfail(BadRequestParams(", ".join(
                         e.message for e in errors)))
 
+            # Get the name of the endpoint
             funcname = api.get("func") or api["endpoint"]
-            versionClass = getattr(
-                self.api.implementation, "v{}".format(version))
-            func = getattr(versionClass, "{}_{}".format(
-                funcname, request.method)).im_func
+            # Find the version class in the implementation
+            versionClass = getattr(self.api.implementation, "v{}".format(version))
+            # Do the dispatch, based on endpoint_method
+            func = getattr(versionClass, "{}_{}".format(funcname, method)).im_func
 
             d = Deferred()
 
@@ -174,9 +209,7 @@ class SaratogaResource(Resource):
             # Check for authentication. #
             #############################
 
-            reqAuth = api.get("requiresAuthentication", False)
-
-            if reqAuth:
+            if api.get("requiresAuthentication", False):
 
                 if not hasattr(self.api.serviceClass, "auth"):
                     fail = APIError("Authentication required, but there is not"
@@ -184,7 +217,6 @@ class SaratogaResource(Resource):
                     return _quickfail(fail)
 
                 def _authAdditional(canonicalUsername):
-
                     return {"username": canonicalUsername}
 
                 auth = request.getHeader("Authorization")
@@ -193,24 +225,22 @@ class SaratogaResource(Resource):
                     fail = AuthenticationRequired("Authentication required.")
                     return _quickfail(fail)
 
-                
+                # Find out how we're authenticating
                 authType, authDetails = auth.split()
                 authType = authType.lower()
 
-                if not authType in ["basic"]:
-                    if not authType.startswith("signature"):   
-                        fail = AuthenticationFailed(
+                if not authType in ["basic"] and  not authType.startswith("signature"):   
+                    fail = AuthenticationFailed(
                             "Unsupported Authorization type '{}'".format(
                                 authType.upper()))
-                        return _quickfail(fail)
-                
+                    return _quickfail(fail)
+                        
                 if authType == "basic":
                     try:
                         authDetails = b64decode(authDetails)
                         authUser, authPassword = authDetails.split(":")
                     except:
-                        fail = AuthenticationFailed(
-                            "Malformed Authorization header.")
+                        fail = AuthenticationFailed("Malformed Authorization header.")
                         return _quickfail(fail)
                     
                     d.addCallback(lambda _:
@@ -229,26 +259,23 @@ class SaratogaResource(Resource):
 
                 d.addCallback(_authAdditional)
 
-            d.addCallback(_runAPICall, args, userParams, (api, version, processor))
-            d.addCallback(_write, request, api, processor)
-            d.addErrback(_error, request, api, processor)
+            d.addCallback(_runAPICall)
+            d.addCallback(_write)
+            d.addErrback(_error)
 
             # Kick off the chain
             d.callback(None)
-
-        else:
-            fail = DoesNotExist("Endpoint does not exist.")
-            _quickfail(fail)
-
-        return 1
-
+            
+            return 1
 
 
 class SaratogaAPI(object):
 
-    def __init__(self, implementation, definition, serviceClass=None,
-                 outputRegistry=None):
+    def __init__(self, implementation, definition, serviceClass=None, outputRegistry=None,
+                 methods=["GET", "POST", "HEAD", "PUT", "DELETE", "PATCH"]):
 
+        methods = [x.upper() for x in methods]
+        
         if serviceClass:
             self.serviceClass = serviceClass
         else:
@@ -260,8 +287,12 @@ class SaratogaAPI(object):
             self.outputRegistry = outputFormats.OutputRegistry("application/json")
             self.outputRegistry.register("application/json",
                                          outputFormats.JSendJSONOutputFormat)
-            
+            self.outputRegistry.register("application/debuggablejson",
+                                         outputFormats.DebuggableJSendJSONOutputFormat)
+
+        # Where the implementation comes from
         self._implementation = implementation
+        # Where we put the implementation in
         self.implementation = DefaultServiceClass()
 
         if not definition.get("metadata"):
@@ -270,10 +301,7 @@ class SaratogaAPI(object):
         self.APIMetadata = definition["metadata"]
         self.APIDefinition = definition.get("endpoints", [])
         self._versions = self.APIMetadata["versions"]
-        self.endpoints = {
-            "GET": {},
-            "POST": {}
-        }
+        self.endpoints = {x:{} for x in methods}
 
         self.resource = SaratogaResource(self)
 
@@ -290,7 +318,7 @@ class SaratogaAPI(object):
             setattr(self.implementation, "v{}".format(version), i)
 
         for api in self.APIDefinition:
-            for verb in ["GET", "POST"]:
+            for verb in methods:
                 for processor in api.get("{}Processors".format(
                         verb.lower()), []):
 
