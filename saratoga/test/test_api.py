@@ -22,6 +22,9 @@ class APIImpl(object):
         def exampleregex_GET(self, request, params, someID):
             return {"id": someID}
 
+        def nothing_GET(self, request, params):
+            pass
+
         def __init__(self):
             self.jsonbodyParams_GET = self.example_GET
             self.urlParams_GET = self.example_GET
@@ -39,6 +42,10 @@ APIDef = {
     "endpoints": [
         {
             "endpoint": "example",
+            "getProcessors": [{"versions": [1]}]
+        },
+        {
+            "endpoint": "nothing",
             "getProcessors": [{"versions": [1]}]
         },
         {
@@ -198,7 +205,7 @@ class SaratogaAPITests(TestCase):
     def setUp(self):
         fp = getModule(__name__).filePath
         copy(fp.parent().child("jsonschemaext.json").path, "jsonschemaext.json")
-        
+
         self.api = SaratogaAPI(APIImpl, APIDef)
 
     def test_customOutputFormatRegistry(self):
@@ -206,7 +213,7 @@ class SaratogaAPITests(TestCase):
         o = OutputRegistry("application/json")
         api = SaratogaAPI(APIImpl, APIDef, outputRegistry=o)
         self.assertIs(o, api.outputRegistry)
-        
+
     def test_getResource(self):
         """
         Check that Saratoga returns the correct resource.
@@ -224,6 +231,18 @@ class SaratogaAPITests(TestCase):
             )
 
         return self.api.test("/v1/example").addCallback(rendered)
+
+    def test_basic_nothing(self):
+        """
+        Double check we handle functons that return nothing.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {}}
+            )
+
+        return self.api.test("/v1/nothing").addCallback(rendered)
 
     def test_basicWithEmptyParams(self):
         """
@@ -249,8 +268,8 @@ class SaratogaAPITests(TestCase):
             )
 
         return self.api.test("/v1/example/4").addCallback(rendered)
-        
-        
+
+
     def test_handlingOfExceptions(self):
         """
         Test that throwing a generic exception is handled gracefully.
@@ -437,7 +456,7 @@ class SaratogaAPITests(TestCase):
             warnings = self.flushLoggedErrors()
             self.assertEqual(warnings[0].getErrorMessage(), "u'cake' is a "
                 "required property, u'muffin' is a required property")
-            
+
         return self.api.test("/v1/responseParamsExtLoad").addCallback(rendered)
 
 
@@ -510,3 +529,72 @@ class SaratogaAPITests(TestCase):
             "hello": "yes", "goodbye": "no", "the": "beatles"
             })
         return d.addCallback(rendered)
+
+    def test_undefinedHTTPMethod(self):
+        """
+        Test that an undefined HTTP method returns a nice value.
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Method not allowed."}
+            )
+
+        return self.api.test("/v1/example", method="WAFFLE").addCallback(rendered)
+
+
+    def test_customHTTPMethods(self):
+
+        APIDef = {
+            "metadata": {"versions": [1]},
+            "endpoints": [
+                {
+                    "endpoint": "example",
+                    "waffleProcessors": [{"versions": [1]}]
+                }
+            ]
+        }
+
+        class APIImpl(object):
+            class v1(object):
+                def example_WAFFLE(self, request, params):
+                    return "OK"
+
+        self.api = SaratogaAPI(APIImpl, APIDef, methods=["WAFFLE"])
+
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": "OK"}
+            )
+
+        return self.api.test("/v1/example", method="WAFFLE").addCallback(rendered)
+
+    def test_customHTTPMethodsFunnyCasing(self):
+        """
+        Test funny casing works.
+        """
+        APIDef = {
+            "metadata": {"versions": [1]},
+            "endpoints": [
+                {
+                    "endpoint": "example",
+                    "waffleProcessors": [{"versions": [1]}]
+                }
+            ]
+        }
+
+        class APIImpl(object):
+            class v1(object):
+                def example_WAFFLE(self, request, params):
+                    return "OK"
+
+        self.api = SaratogaAPI(APIImpl, APIDef, methods=["WaFfLE"])
+
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": "OK"}
+            )
+
+        return self.api.test("/v1/example", method="WAFFlE").addCallback(rendered)
