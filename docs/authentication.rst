@@ -1,6 +1,10 @@
-=============================
-Introduction - Authentication
-=============================
+==============================
+Introduction -- Authentication
+==============================
+
+.. note::
+
+   This hasn't been adapted from Haddock yet, so is wrong in places (pretty much everywhere).
 
 Some APIs may need authentication before accessing - for example, if you are writing a service rather than just a public data API. Haddock allows you to either do the authentication yourself, or hook in a "Shared Secret Source" which will request a user's shared secret from your backend.
 

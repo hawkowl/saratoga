@@ -40,8 +40,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Haddock'
-copyright = u'2013, HawkOwl'
+project = u'Saratoga'
+copyright = u'2014, HawkOwl'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -172,7 +172,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Haddockdoc'
+htmlhelp_basename = 'Saratogadoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -191,7 +191,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Haddock.tex', u'Haddock Documentation',
+  ('index', 'Saratoga.tex', u'Saratoga Documentation',
    u'HawkOwl', 'manual'),
 ]
 
@@ -221,7 +221,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'haddock', u'Haddock Documentation',
+    ('index', 'saratoga', u'Saratoga Documentation',
      [u'HawkOwl'], 1)
 ]
 
@@ -235,8 +235,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Haddock', u'Haddock Documentation',
-   u'HawkOwl', 'Haddock', 'One line description of project.',
+  ('index', 'Saratoga', u'Saratoga Documentation',
+   u'HawkOwl', 'Saratoga', 'One line description of project.',
    'Miscellaneous'),
 ]
 

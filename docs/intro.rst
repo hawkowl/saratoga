@@ -1,6 +1,6 @@
-=====================================
-Introduction - Getting Off The Ground
-=====================================
+======================================
+Introduction -- Getting Off The Ground
+======================================
 
 Saratoga was made to help you create simple APIs that divide cleanly over versions, with minimal fuss -- Saratoga takes care of routing, assembly, parameter checking and authentication for you.
 All you have to do is provide your business logic.
