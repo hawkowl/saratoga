@@ -1,0 +1,15 @@
+{
+    "metadata": {
+	"versions": [1]
+    },
+    "endpoints": [
+	{
+	    "endpoint": "example",
+	    "getProcessors": [
+		{
+		    "versions": [1]
+		}
+	    ]
+	}
+    ]
+}
