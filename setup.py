@@ -36,7 +36,8 @@ setup(
         ],
     install_requires=[
         "twisted",
-        "jsonschema"
+        "jsonschema",
+        "negotiator"
         ],
     long_description=file('README.rst').read()
 )
