@@ -143,8 +143,8 @@ class SaratogaResource(Resource):
         if not pathLookup:
             # If there's no static route, try dynamic Django-style routes
             for item in endpointMethods:
-                a = re.compile("^/%s/%s$"%item)
-                match = a.match(request.path)
+                a = re.compile("^%s/%s$" % item)
+                match = a.match("/".join(request.postpath))
                 if match:
                     # We found it, so break out of here
                     pathLookup = endpointMethods[item]
