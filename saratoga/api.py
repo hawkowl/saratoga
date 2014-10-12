@@ -138,13 +138,13 @@ class SaratogaResource(Resource):
 
 
         # Try and look up the static route in the endpoints list
-        pathLookup = endpointMethods.get(request.path)
+        pathLookup = endpointMethods.get(tuple(request.postpath))
 
         if not pathLookup:
             # If there's no static route, try dynamic Django-style routes
             for item in endpointMethods:
-                a = re.compile("^" + item + "$")
-                match = a.match(request.path)
+                a = re.compile("^%s/%s$" % item)
+                match = a.match("/".join(request.postpath))
                 if match:
                     # We found it, so break out of here
                     pathLookup = endpointMethods[item]
@@ -347,7 +347,7 @@ class SaratogaAPI(object):
                                 "processor in the v{} {} endpoint".format(
                                     verb, version, funcName))
 
-                        path = "/v{}/{}".format(version, api["endpoint"])
+                        path = ('v' + str(version), api["endpoint"])
                         self.endpoints[verb][path] = (api, version, processor)
 
 

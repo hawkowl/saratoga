@@ -1,10 +1,12 @@
 from twisted.trial.unittest import TestCase
 from twisted.python.modules import getModule
+from twisted.web.resource import Resource, getChildForRequest
 
 from shutil import copy
 
 from saratoga.api import SaratogaAPI
 from saratoga.outputFormats import OutputRegistry
+from saratoga.test.requestMock import requestMock, _render
 
 import json
 
@@ -208,17 +210,52 @@ class SaratogaAPITests(TestCase):
 
         self.api = SaratogaAPI(APIImpl, APIDef)
 
+    def test_EmbeddedSaratogaBasic(self):
+
+        def rendered(res, request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {}}
+            )
+
+        r = Resource()
+        r.putChild("api", self.api.getResource())
+        req = requestMock("/api/v1/nothing")
+        endup = getChildForRequest(r, req)
+        d = _render(endup, req)
+        d.addCallback(rendered, req)
+        return r
+
+    def test_EmbeddedSaratogaWithRegex(self):
+
+        def rendered(res, request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "success", "data": {"id": "4"}}
+            )
+
+        r = Resource()
+        r.putChild("api", self.api.getResource())
+        req = requestMock("/api/v1/example/4")
+        endup = getChildForRequest(r, req)
+        d = _render(endup, req)
+        d.addCallback(rendered, req)
+        return r
+
+
     def test_customOutputFormatRegistry(self):
 
         o = OutputRegistry("application/json")
         api = SaratogaAPI(APIImpl, APIDef, outputRegistry=o)
         self.assertIs(o, api.outputRegistry)
 
+
     def test_getResource(self):
         """
         Check that Saratoga returns the correct resource.
         """
         self.assertIs(self.api.resource, self.api.getResource())
+
 
     def test_basic(self):
         """
@@ -232,7 +269,8 @@ class SaratogaAPITests(TestCase):
 
         return self.api.test("/v1/example").addCallback(rendered)
 
-    def test_basic_nothing(self):
+
+    def test_basicNothing(self):
         """
         Double check we handle functons that return nothing.
         """
@@ -243,6 +281,7 @@ class SaratogaAPITests(TestCase):
             )
 
         return self.api.test("/v1/nothing").addCallback(rendered)
+
 
     def test_basicWithEmptyParams(self):
         """
@@ -256,6 +295,7 @@ class SaratogaAPITests(TestCase):
 
         return self.api.test("/v1/example", replaceEmptyWithEmptyDict=True
             ).addCallback(rendered)
+
 
     def test_basicRegex(self):
         """
