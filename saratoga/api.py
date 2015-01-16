@@ -103,9 +103,6 @@ class SaratogaResource(Resource):
             if errorcode == 500:
                 errstatus = "error"
                 errmessage = "Internal server error."
-            elif errorcode == 404:
-                errstatus = "error"
-                errmessage = error.message
             else:
                 errstatus = "fail"
                 errmessage = error.message
@@ -163,6 +160,8 @@ class SaratogaResource(Resource):
 
             # Read in the content from the request
             requestContent = request.content.read()
+            # Set it back to the start
+            request.content.seek(0)
 
             try:
                 # Parse it from JSON
