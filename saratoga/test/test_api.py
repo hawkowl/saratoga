@@ -4,7 +4,7 @@ from twisted.web.resource import Resource, getChildForRequest
 
 from shutil import copy
 
-from saratoga.api import SaratogaAPI
+from saratoga.api import SaratogaAPI, DoesNotExist
 from saratoga.outputFormats import OutputRegistry
 from saratoga.test.requestMock import requestMock, _render
 
@@ -22,7 +22,10 @@ class APIImpl(object):
             raise Exception("OMG LOL WTF")
 
         def exampleregex_GET(self, request, params, someID):
-            return {"id": someID}
+            if not someID == "9999":
+                return {"id": someID}
+            else:
+                raise DoesNotExist("Bad ID :(")
 
         def nothing_GET(self, request, params):
             pass
@@ -210,6 +213,7 @@ class SaratogaAPITests(TestCase):
 
         self.api = SaratogaAPI(APIImpl, APIDef)
 
+
     def test_EmbeddedSaratogaBasic(self):
 
         def rendered(res, request):
@@ -226,6 +230,7 @@ class SaratogaAPITests(TestCase):
         d.addCallback(rendered, req)
         return r
 
+
     def test_EmbeddedSaratogaWithRegex(self):
 
         def rendered(res, request):
@@ -237,6 +242,24 @@ class SaratogaAPITests(TestCase):
         r = Resource()
         r.putChild("api", self.api.getResource())
         req = requestMock("/api/v1/example/4")
+        endup = getChildForRequest(r, req)
+        d = _render(endup, req)
+        d.addCallback(rendered, req)
+        return r
+
+
+    def test_EmbeddedSaratogaWithRegex404(self):
+
+        def rendered(res, request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Bad ID :("}
+            )
+            warnings = self.flushLoggedErrors()
+
+        r = Resource()
+        r.putChild("api", self.api.getResource())
+        req = requestMock("/api/v1/example/9999")
         endup = getChildForRequest(r, req)
         d = _render(endup, req)
         d.addCallback(rendered, req)
@@ -308,6 +331,20 @@ class SaratogaAPITests(TestCase):
             )
 
         return self.api.test("/v1/example/4").addCallback(rendered)
+
+
+    def test_basicRegexFail(self):
+        """
+        Basic Saratoga test, testing the regex stuff, and handing 404s
+        """
+        def rendered(request):
+            self.assertEqual(
+                json.loads(request.getWrittenData()),
+                {"status": "fail", "data": "Bad ID :("}
+            )
+            warnings = self.flushLoggedErrors()
+
+        return self.api.test("/v1/example/9999").addCallback(rendered)
 
 
     def test_handlingOfExceptions(self):
