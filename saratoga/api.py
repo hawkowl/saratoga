@@ -17,6 +17,9 @@ from saratoga import (
     __version__
 )
 
+# shut up pyflakes
+DoesNotExist = DoesNotExist
+
 from base64 import b64decode
 from jsonschema import Draft4Validator
 
