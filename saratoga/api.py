@@ -11,6 +11,7 @@ from saratoga import (
     AuthenticationFailed,
     AuthenticationRequired,
     DoesNotExist,
+    NoSuchEndpoint,
     APIError,
     outputFormats,
     __version__
@@ -103,6 +104,9 @@ class SaratogaResource(Resource):
             if errorcode == 500:
                 errstatus = "error"
                 errmessage = "Internal server error."
+            elif isinstance(error, NoSuchEndpoint):
+                errstatus = "error"
+                errmessage = error.message
             else:
                 errstatus = "fail"
                 errmessage = error.message
@@ -149,7 +153,7 @@ class SaratogaResource(Resource):
                     break
 
         if not pathLookup:
-            fail = DoesNotExist("Endpoint does not exist.")
+            fail = NoSuchEndpoint("Endpoint does not exist.")
             return _quickfail(fail)
         else:
             # Some variables we'll need later

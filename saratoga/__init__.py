@@ -1,6 +1,6 @@
 import os
 
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 __gitversion__ = __version__
 
 basePath = os.path.abspath(os.path.dirname(__file__))
@@ -9,10 +9,14 @@ class APIError(Exception):
     code = 500
 
     def __init__(self, message, code=None):
-        self.code = code
+        if code:
+            self.code = code
         super(APIError, self).__init__(message)
 
 class DoesNotExist(APIError):
+    code = 404
+
+class NoSuchEndpoint(APIError):
     code = 404
 
 class BadRequestParams(APIError):
