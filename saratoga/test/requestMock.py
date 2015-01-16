@@ -29,16 +29,16 @@ def requestMock(path, method="GET", host="localhost", port=8080, isSecure=False,
     PR #30.
     """
     from mock import Mock
-    
+
     if not headers:
         headers = {}
 
     headers["Date"] = ["Tue, 01 Jan 2014 01:01:01 GMT"]
 
     if enableHMAC:
-        import httpsig
+        import httpsig_cffi
 
-        hs = httpsig.HeaderSigner(enableHMAC[0], enableHMAC[1], algorithm="hmac-sha256")
+        hs = httpsig_cffi.HeaderSigner(enableHMAC[0], enableHMAC[1], algorithm="hmac-sha256")
         signed_headers_dict = hs.sign(headers={x:y[0] for x,y in headers.iteritems()},
                                       method=method, path=path)
         headers = {x:[y] for x,y in signed_headers_dict.iteritems()}

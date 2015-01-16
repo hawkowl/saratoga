@@ -62,13 +62,13 @@ class DefaultAuthenticator(object):
 
         def _continue(result):
 
-            import httpsig.verify
+            from httpsig_cffi import verify
 
             head = {x.lower():y[0] for x,y in request.requestHeaders.getAllRawHeaders()}
-            hs = httpsig.verify.HeaderVerifier(headers=head,
-                                               secret=result.get("password"),
-                                               method=request.method,
-                                               path=request.path)
+            hs = verify.HeaderVerifier(headers=head,
+                                       secret=result.get("password"),
+                                       method=request.method,
+                                       path=request.path)
             res = hs.verify()
 
             if res:
@@ -77,4 +77,4 @@ class DefaultAuthenticator(object):
 
             raise AuthenticationFailed("Authentication failed.")
 
-        return defer.maybeDeferred(self._getUserDetails, username).addCallback(_continue)    
+        return defer.maybeDeferred(self._getUserDetails, username).addCallback(_continue)

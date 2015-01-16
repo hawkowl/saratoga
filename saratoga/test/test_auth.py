@@ -89,17 +89,16 @@ class AuthTests(unittest.TestCase):
         request.method = "GET"
         request.clientproto = 'HTTP/1.1'
 
-        import httpsig
+        import httpsig_cffi
 
         key_id = "alice"
         secret = "wonderland"
-        
-        hs = httpsig.HeaderSigner(key_id, secret, algorithm="hmac-sha256")
+
+        hs = httpsig_cffi.HeaderSigner(key_id, secret, algorithm="hmac-sha256")
         signed_headers_dict = hs.sign({"Date": "Tue, 01 Jan 2014 01:01:01 GMT", "Host": "example.com"}, method="GET", path="/test")
-        
+
         request.requestHeaders = Headers({x:[y] for x, y in signed_headers_dict.iteritems()})
-        
+
         authDeferred = authenticator.auth_HMAC("alice", request)
 
         return authDeferred
-
