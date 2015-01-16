@@ -9,8 +9,7 @@ class APIError(Exception):
     code = 500
 
     def __init__(self, message, code=None):
-        if code:
-            self.code = code
+        self.code = code or self.code
         super(APIError, self).__init__(message)
 
 class DoesNotExist(APIError):
