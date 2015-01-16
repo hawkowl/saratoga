@@ -256,6 +256,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "fail", "data": "Bad ID :("}
             )
             warnings = self.flushLoggedErrors()
+            self.assertEqual(len(warnings), 1)
 
         r = Resource()
         r.putChild("api", self.api.getResource())
@@ -343,6 +344,7 @@ class SaratogaAPITests(TestCase):
                 {"status": "fail", "data": "Bad ID :("}
             )
             warnings = self.flushLoggedErrors()
+            self.assertEqual(len(warnings), 1)
 
         return self.api.test("/v1/example/9999").addCallback(rendered)
 
